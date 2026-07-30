@@ -1,0 +1,7 @@
+packages:
+  - 'packages/*'
+  - 'gateway'
+  - 'services/*'
+  - 'client'
+allowBuilds:
+  esbuild: true
