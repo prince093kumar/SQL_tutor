@@ -28,7 +28,7 @@ class QueryRepository {
         const [columns] = await appDb.query(`
             SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_KEY 
             FROM information_schema.COLUMNS 
-            WHERE TABLE_SCHEMA = 'sqllab_practice'
+            WHERE TABLE_SCHEMA = 'practice_db'
             ORDER BY TABLE_NAME, ORDINAL_POSITION
         `);
         return columns;

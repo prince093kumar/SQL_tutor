@@ -20,6 +20,8 @@ router.post('/execute', sqlController.execute.bind(sqlController));
 router.get('/history', sqlController.getHistory.bind(sqlController));
 router.post('/save', sqlController.save.bind(sqlController));
 router.get('/saved', sqlController.getSaved.bind(sqlController));
+router.get('/autocomplete', sqlController.getAutocomplete.bind(sqlController));
+router.get('/schema', sqlController.getSchema.bind(sqlController));
 
 app.use('/api/v1/sql', router);
 

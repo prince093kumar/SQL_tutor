@@ -5,7 +5,7 @@ const appPool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || 'root',
-    database: process.env.DB_NAME || 'sqllab_app',
+    database: process.env.DB_NAME || 'sql_db',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
@@ -17,7 +17,7 @@ const practicePool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || 'root',
-    database: process.env.DB_PRACTICE_NAME || 'sqllab_practice',
+    database: process.env.DB_PRACTICE_NAME || 'practice_db',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,

@@ -9,6 +9,7 @@ const router = express.Router();
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
 const SQL_SERVICE_URL = process.env.SQL_SERVICE_URL || 'http://localhost:3002';
 const CHALLENGE_SERVICE_URL = process.env.CHALLENGE_SERVICE_URL || 'http://localhost:3003';
+const ANALYTICS_SERVICE_URL = process.env.ANALYTICS_SERVICE_URL || 'http://localhost:3004';
 
 // Auth routes (Public)
 router.use('/auth', createProxyMiddleware({
@@ -34,6 +35,15 @@ router.use('/challenges', authMiddleware, createProxyMiddleware({
     changeOrigin: true,
     pathRewrite: {
         '^/': '/api/v1/challenges/'
+    }
+}));
+
+// Analytics routes (Protected)
+router.use('/analytics', authMiddleware, createProxyMiddleware({
+    target: ANALYTICS_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+        '^/': '/api/v1/analytics/'
     }
 }));
 

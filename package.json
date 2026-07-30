@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npx pnpm -C gateway dev\" \"npx pnpm -C services/auth-service dev\" \"npx pnpm -C services/sql-service dev\" \"npx pnpm -C services/challenge-service dev\" \"npx pnpm -C client dev\""
+    "dev": "concurrently \"npx pnpm -C gateway dev\" \"npx pnpm -C services/auth-service dev\" \"npx pnpm -C services/sql-service dev\" \"npx pnpm -C services/challenge-service dev\" \"npx pnpm -C services/analytics-service dev\" \"npx pnpm -C client dev\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

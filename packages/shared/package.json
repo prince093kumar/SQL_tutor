@@ -1,0 +1,9 @@
+{
+  "name": "@sqllab/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "redis": "^4.6.13"
+  }
+}

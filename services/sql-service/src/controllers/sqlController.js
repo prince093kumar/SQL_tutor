@@ -56,6 +56,23 @@ class SqlController {
             res.status(500).json({ error: error.message });
         }
     }
-}
+    async getAutocomplete(req, res) {
+        try {
+            const { prefix } = req.query;
+            const data = await sqlService.getAutocompleteSuggestions(prefix);
+            res.json({ data });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
 
+    async getSchema(req, res) {
+        try {
+            const data = await sqlService.getSchema();
+            res.json({ data });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+}
 export default new SqlController();

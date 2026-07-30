@@ -1,9 +1,12 @@
 import React from 'react';
-import { Database, Clock, Save, Code } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Database, Clock, Save, Code, Trophy, LayoutDashboard, Target } from 'lucide-react';
 import { useSqlStore } from '../store/useSqlStore';
 import api from '../utils/api';
 
 export const Sidebar: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { history, savedQueries, setCurrentQuery, setHistory, setSavedQueries } = useSqlStore();
   const [activeTab, setActiveTab] = React.useState<'playground' | 'history' | 'saved'>('playground');
 
@@ -32,15 +35,24 @@ export const Sidebar: React.FC = () => {
 
   return (
     <div className="w-64 bg-vscode-sidebar border-r border-vscode-border flex flex-col h-full overflow-hidden text-sm">
-      {/* Activity Bar */}
-      <div className="flex bg-vscode-bg border-b border-vscode-border p-2 space-x-4">
-        <button 
-          className={`p-2 rounded hover:bg-white/10 ${activeTab === 'playground' ? 'text-vscode-accent' : 'text-vscode-text'}`}
-          onClick={() => setActiveTab('playground')}
-          title="Playground"
-        >
-          <Code size={20} />
-        </button>
+      {/* Global Navigation */}
+      <div className="flex bg-vscode-bg border-b border-vscode-border p-2 space-x-2">
+        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/')} title="Playground"><Code size={18} /></button>
+        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/challenges' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/challenges')} title="Challenges"><Target size={18} /></button>
+        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/leaderboard' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/leaderboard')} title="Leaderboard"><Trophy size={18} /></button>
+        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/analytics' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/analytics')} title="Analytics"><LayoutDashboard size={18} /></button>
+      </div>
+
+      {/* Activity Bar for Playground */}
+      {location.pathname === '/' && (
+        <div className="flex bg-[#252526] border-b border-vscode-border p-2 space-x-4">
+          <button 
+            className={`p-2 rounded hover:bg-white/10 ${activeTab === 'playground' ? 'text-vscode-accent' : 'text-vscode-text'}`}
+            onClick={() => setActiveTab('playground')}
+            title="Explorer"
+          >
+            <Database size={18} />
+          </button>
         <button 
           className={`p-2 rounded hover:bg-white/10 ${activeTab === 'saved' ? 'text-vscode-accent' : 'text-vscode-text'}`}
           onClick={() => setActiveTab('saved')}
@@ -56,6 +68,7 @@ export const Sidebar: React.FC = () => {
           <Clock size={20} />
         </button>
       </div>
+      )}
 
       {/* Explorer Content */}
       <div className="flex-1 overflow-y-auto p-2">

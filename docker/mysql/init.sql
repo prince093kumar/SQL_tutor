@@ -1,14 +1,22 @@
--- Create databases for app data and practice data
-CREATE DATABASE IF NOT EXISTS sqllab_app;
-CREATE DATABASE IF NOT EXISTS sqllab_practice;
+-- Create separate databases for each microservice to enforce logical boundaries
+CREATE DATABASE IF NOT EXISTS auth_db;
+CREATE DATABASE IF NOT EXISTS sql_db;
+CREATE DATABASE IF NOT EXISTS challenge_db;
+CREATE DATABASE IF NOT EXISTS analytics_db;
+CREATE DATABASE IF NOT EXISTS practice_db;
 
--- Grant privileges (in a real production app we'd use separate users with restricted privileges)
-GRANT ALL PRIVILEGES ON sqllab_app.* TO 'root'@'%';
-GRANT ALL PRIVILEGES ON sqllab_practice.* TO 'root'@'%';
+-- Grant privileges
+GRANT ALL PRIVILEGES ON auth_db.* TO 'root'@'%';
+GRANT ALL PRIVILEGES ON sql_db.* TO 'root'@'%';
+GRANT ALL PRIVILEGES ON challenge_db.* TO 'root'@'%';
+GRANT ALL PRIVILEGES ON analytics_db.* TO 'root'@'%';
+GRANT ALL PRIVILEGES ON practice_db.* TO 'root'@'%';
 FLUSH PRIVILEGES;
 
--- Use app database to create users table
-USE sqllab_app;
+-- ==========================================
+-- 1. AUTH SERVICE DATABASE
+-- ==========================================
+USE auth_db;
 
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -19,24 +27,32 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- ==========================================
+-- 2. SQL SERVICE DATABASE
+-- ==========================================
+USE sql_db;
+
 CREATE TABLE IF NOT EXISTS saved_queries (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id INT NOT NULL, -- Logical FK to auth_db.users
     title VARCHAR(100) NOT NULL,
     query_text TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS query_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id INT NOT NULL, -- Logical FK to auth_db.users
     query_text TEXT NOT NULL,
     executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status ENUM('success', 'error') NOT NULL,
-    execution_time_ms INT,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    execution_time_ms INT
 );
+
+-- ==========================================
+-- 3. CHALLENGE SERVICE DATABASE
+-- ==========================================
+USE challenge_db;
 
 CREATE TABLE IF NOT EXISTS challenges (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -50,26 +66,47 @@ CREATE TABLE IF NOT EXISTS challenges (
 
 CREATE TABLE IF NOT EXISTS submissions (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id INT NOT NULL, -- Logical FK to auth_db.users
     challenge_id INT NOT NULL,
     query_text TEXT NOT NULL,
     status ENUM('passed', 'failed', 'error') NOT NULL,
     execution_time_ms INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS user_scores (
-    user_id INT PRIMARY KEY,
+    user_id INT PRIMARY KEY, -- Logical FK to auth_db.users
     total_score INT DEFAULT 0,
     challenges_completed INT DEFAULT 0,
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Seed some practice data into the practice database
-USE sqllab_practice;
+-- ==========================================
+-- 4. ANALYTICS SERVICE DATABASE
+-- ==========================================
+USE analytics_db;
+
+CREATE TABLE IF NOT EXISTS achievements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL, -- Logical FK to auth_db.users
+    badge_name VARCHAR(50) NOT NULL,
+    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS daily_progress (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL, -- Logical FK to auth_db.users
+    date DATE NOT NULL,
+    challenges_solved INT DEFAULT 0,
+    queries_run INT DEFAULT 0,
+    UNIQUE KEY (user_id, date)
+);
+
+-- ==========================================
+-- 5. PRACTICE DATABASE (For User Execution)
+-- ==========================================
+USE practice_db;
 
 CREATE TABLE IF NOT EXISTS employees (
     id INT AUTO_INCREMENT PRIMARY KEY,

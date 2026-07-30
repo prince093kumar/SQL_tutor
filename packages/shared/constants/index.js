@@ -1,0 +1,4 @@
+export const Events = {
+    CHALLENGE_SOLVED: 'CHALLENGE_SOLVED',
+    USER_REGISTERED: 'USER_REGISTERED'
+};
