@@ -45,6 +45,17 @@ class QueryRepository {
             WHERE TABLE_SCHEMA = DATABASE()
             ORDER BY TABLE_NAME
         `);
+        const [relationships] = await practiceDb.query(`
+            SELECT
+                TABLE_NAME,
+                COLUMN_NAME,
+                REFERENCED_TABLE_NAME,
+                REFERENCED_COLUMN_NAME
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE()
+                AND REFERENCED_TABLE_NAME IS NOT NULL
+            ORDER BY TABLE_NAME, COLUMN_NAME
+        `);
 
         const tables = columns.reduce((acc, column) => {
             let table = acc.find(item => item.name === column.TABLE_NAME);
@@ -62,7 +73,17 @@ class QueryRepository {
             return acc;
         }, []);
 
-        return { database, tables, views: views.map(view => view.TABLE_NAME) };
+        return {
+            database,
+            tables,
+            views: views.map(view => view.TABLE_NAME),
+            relationships: relationships.map(relationship => ({
+                table: relationship.TABLE_NAME,
+                column: relationship.COLUMN_NAME,
+                referencedTable: relationship.REFERENCED_TABLE_NAME,
+                referencedColumn: relationship.REFERENCED_COLUMN_NAME
+            }))
+        };
     }
 
     async resetPracticeDatabase() {

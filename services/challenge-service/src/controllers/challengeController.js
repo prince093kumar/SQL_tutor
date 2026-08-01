@@ -65,6 +65,20 @@ class ChallengeController {
         }
     }
 
+    async getRecommendedChallenges(req, res) {
+        try {
+            const userId = req.headers['x-user-id'];
+            if (!userId) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+
+            const data = await challengeService.getRecommendedChallenges(userId, req.query.limit);
+            res.json({ data });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     async getCategories(req, res) {
         try {
             const data = await challengeService.getCategories();

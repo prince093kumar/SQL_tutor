@@ -1,5 +1,6 @@
 import challengeRepository from '../repositories/challengeRepository.js';
 import axios from 'axios';
+import { MaxHeap, PriorityQueue } from '../../../../packages/algorithms/index.js';
 
 class ChallengeService {
     async getChallenges() {
@@ -102,7 +103,42 @@ class ChallengeService {
     }
 
     async getLeaderboard() {
-        return challengeRepository.getLeaderboard();
+        const rows = await challengeRepository.getLeaderboardCandidates();
+        const heap = new MaxHeap(user => {
+            const score = Number(user.total_score || 0);
+            const completedBonus = Number(user.challenges_completed || 0) * 5;
+            return score + completedBonus;
+        });
+
+        rows.forEach(row => heap.insert(row));
+        return heap.top(10).map((user, index) => ({
+            ...user,
+            rank: index + 1,
+            rankingScore: Number(user.total_score || 0) + Number(user.challenges_completed || 0) * 5
+        }));
+    }
+
+    async getRecommendedChallenges(userId, limit = 5) {
+        const challenges = await this.getChallenges();
+        const weakTopics = await challengeRepository.getWeakTopics(userId);
+        const weakTopicWeights = new Map(weakTopics.map(topic => [topic.topic, topic.weight]));
+        const queue = new PriorityQueue(item => item.priority);
+
+        challenges.forEach(challenge => {
+            const weakTopicWeight = weakTopicWeights.get(challenge.topic) || weakTopicWeights.get(challenge.category) || 0;
+            const difficultySuitability = challenge.difficulty === 'easy' ? 2 : challenge.difficulty === 'medium' ? 4 : 1;
+            const unfinishedWeight = challenge.status === 'Solved' ? 0 : 3;
+            const recencyWeight = Number(challenge.id || 0) / 100;
+            const priority = weakTopicWeight + difficultySuitability + unfinishedWeight + recencyWeight;
+
+            queue.enqueue({
+                ...challenge,
+                priority: Number(priority.toFixed(2)),
+                reason: weakTopicWeight > 0 ? `Practice ${challenge.topic}` : 'Good next challenge'
+            });
+        });
+
+        return queue.toArray(Number(limit) || 5);
     }
 }
 

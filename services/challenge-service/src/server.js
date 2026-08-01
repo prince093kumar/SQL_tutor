@@ -21,6 +21,7 @@ router.get('/', challengeController.getChallenges.bind(challengeController));
 router.get('/categories', challengeController.getCategories.bind(challengeController));
 router.get('/difficulties', challengeController.getDifficulties.bind(challengeController));
 router.get('/leaderboard', challengeController.getLeaderboard.bind(challengeController));
+router.get('/recommended', challengeController.getRecommendedChallenges.bind(challengeController));
 router.get('/:id', challengeController.getChallengeById.bind(challengeController));
 router.post('/run', challengeController.runChallenge.bind(challengeController));
 router.post('/submit', challengeController.submitChallenge.bind(challengeController));

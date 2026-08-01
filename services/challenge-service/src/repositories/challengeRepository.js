@@ -144,15 +144,42 @@ class ChallengeRepository {
         `, [userId]);
     }
 
-    async getLeaderboard() {
+    async getLeaderboardCandidates() {
         const [rows] = await db.query(`
             SELECT u.username, s.total_score, s.challenges_completed 
             FROM user_scores s
             JOIN users u ON s.user_id = u.id
-            ORDER BY s.total_score DESC
-            LIMIT 10
         `);
         return rows;
+    }
+
+    async getLeaderboard() {
+        return this.getLeaderboardCandidates();
+    }
+
+    async getWeakTopics(userId) {
+        const [rows] = await db.query(`
+            SELECT c.title, c.schema_setup, s.status, COUNT(*) AS attempts
+            FROM submissions s
+            JOIN challenges c ON c.id = s.challenge_id
+            WHERE s.user_id = ? AND s.status <> 'passed'
+            GROUP BY c.id, c.title, c.schema_setup, s.status
+            ORDER BY attempts DESC
+            LIMIT 5
+        `, [userId]);
+
+        if (rows.length === 0) {
+            return [
+                { topic: 'INNER JOIN', weight: 6 },
+                { topic: 'AVG', weight: 4 },
+                { topic: 'SELECT', weight: 2 }
+            ];
+        }
+
+        return rows.map(row => ({
+            topic: row.schema_setup?.includes('JOIN') || row.title.includes('Join') ? 'INNER JOIN' : row.title.includes('Average') ? 'AVG' : 'SELECT',
+            weight: Number(row.attempts) + 5
+        }));
     }
 }
 

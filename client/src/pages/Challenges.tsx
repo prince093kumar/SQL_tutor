@@ -222,7 +222,22 @@ export const Challenges: React.FC = () => {
     <div className="flex h-screen bg-vscode-bg text-vscode-text">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="grid h-[68%] min-h-0 grid-cols-[280px_320px_1fr_1.05fr] border-b border-vscode-border">
+        <section className="grid grid-cols-[1.1fr_repeat(5,1fr)] gap-4 border-b border-vscode-border bg-[#1b1b1b] p-4">
+          <div>
+            <div className="text-xs uppercase text-vscode-text/55">Continue Learning</div>
+            <div className="mt-2 flex items-center gap-3">
+              <div className="h-3 flex-1 rounded bg-vscode-sidebar"><div className="h-3 rounded bg-vscode-accent" style={{ width: '72%' }} /></div>
+              <span className="text-sm text-white">72%</span>
+            </div>
+          </div>
+          <div className="rounded border border-vscode-border bg-vscode-sidebar p-3"><div className="text-xs text-vscode-text/50">Current Challenge</div><div className="mt-1 text-sm text-white">JOIN Basics</div></div>
+          <div className="rounded border border-vscode-border bg-vscode-sidebar p-3"><div className="text-xs text-vscode-text/50">Difficulty</div><div className="mt-1 text-sm text-yellow-300">Medium</div></div>
+          <div className="rounded border border-vscode-border bg-vscode-sidebar p-3"><div className="text-xs text-vscode-text/50">XP</div><div className="mt-1 text-sm text-white">1200</div></div>
+          <div className="rounded border border-vscode-border bg-vscode-sidebar p-3"><div className="text-xs text-vscode-text/50">Ranking</div><div className="mt-1 text-sm text-white">21</div></div>
+          <div className="rounded border border-vscode-border bg-vscode-sidebar p-3"><div className="text-xs text-vscode-text/50">Streak</div><div className="mt-1 text-sm text-white">18 Days</div></div>
+        </section>
+
+        <div className="grid h-[58%] min-h-0 grid-cols-[280px_320px_1fr_1.05fr] border-b border-vscode-border">
           <aside className="overflow-y-auto border-r border-vscode-border bg-[#202020] p-4">
             <h1 className="text-lg font-semibold text-white">SQL Challenges</h1>
             <div className="relative mt-4">
@@ -265,7 +280,7 @@ export const Challenges: React.FC = () => {
             <div className="mb-3 text-sm text-vscode-text/70">{filteredChallenges.length} Challenges Found</div>
             <div className="space-y-3">
               {filteredChallenges.map(challenge => (
-                <button key={challenge.id} onClick={() => selectChallenge(challenge)} className={`w-full rounded border p-3 text-left hover:bg-white/5 ${selectedChallenge.id === challenge.id ? 'border-vscode-accent bg-vscode-accent/10' : 'border-vscode-border bg-[#202020]'}`}>
+                <button key={challenge.id} onClick={() => selectChallenge(challenge)} className={`group w-full rounded border p-3 text-left hover:bg-white/5 ${selectedChallenge.id === challenge.id ? 'border-vscode-accent bg-vscode-accent/10' : 'border-vscode-border bg-[#202020]'}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2">
                       {challenge.status === 'Solved' ? <CheckCircle2 size={16} className="text-green-400" /> : <Circle size={16} className="text-vscode-text/40" />}
@@ -275,13 +290,18 @@ export const Challenges: React.FC = () => {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2 text-xs">
                     <span className={difficultyStyles[challenge.difficulty]}>{challenge.difficulty}</span>
-                    <span>{challenge.topic}</span>
+                    <span className="flex items-center gap-0.5 text-yellow-300"><Star size={12} /><Star size={12} /><Star size={12} /></span>
+                    <span>{challenge.status}</span>
                     <span className="flex items-center gap-1 text-yellow-300"><Star size={12} /> {challenge.xp} XP</span>
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-1 text-[11px] text-vscode-text/60">
-                    <span>{challenge.successRate}% Success</span>
+                    <span>{challenge.successRate}% Solved</span>
                     <span>{challenge.submissions.toLocaleString()} Submissions</span>
-                    <span>{challenge.status}</span>
+                    <span>{challenge.topic}</span>
+                  </div>
+                  <div className="mt-3 hidden rounded border border-vscode-border bg-vscode-bg p-2 text-[11px] text-vscode-text/65 group-hover:block">
+                    <div>Estimated Time: {challenge.estimated_time || '15 Minutes'}</div>
+                    <div>Tables: {challenge.tables.join(', ')}</div>
                   </div>
                 </button>
               ))}

@@ -118,6 +118,15 @@ class SqlController {
         }
     }
 
+    async getSchemaGraph(req, res) {
+        try {
+            const data = await sqlService.getSchemaGraph(req.query.startTable);
+            res.json(data);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     async reset(req, res) {
         try {
             const data = await sqlService.resetPracticeDatabase();

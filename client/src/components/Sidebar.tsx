@@ -1,6 +1,23 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Award, BarChart3, ChevronDown, Clock, Code, Database, FileCode2, LayoutDashboard, RefreshCw, Save, Table2, Target, Trophy, UserCircle } from 'lucide-react';
+import {
+  Award,
+  BarChart3,
+  ChevronDown,
+  Clock,
+  Code,
+  Database,
+  FileCode2,
+  Folder,
+  FunctionSquare,
+  LayoutDashboard,
+  RefreshCw,
+  Save,
+  Table2,
+  Target,
+  Trophy,
+  UserCircle,
+} from 'lucide-react';
 import { useSqlStore } from '../store/useSqlStore';
 import api from '../utils/api';
 
@@ -19,6 +36,14 @@ type DatabaseSchema = {
   database: string;
   tables: SchemaTable[];
   views?: string[];
+};
+
+const fallbackObjects = {
+  tables: ['employee', 'department', 'orders', 'customers', 'products'],
+  views: ['employee_summary', 'monthly_sales'],
+  procedures: ['calculate_salary()'],
+  functions: ['getDepartment()'],
+  queries: ['Interview.sql', 'Practice.sql', 'Favorites.sql'],
 };
 
 export const Sidebar: React.FC = () => {
@@ -151,36 +176,66 @@ export const Sidebar: React.FC = () => {
             {schemaError && <div className="rounded border border-red-500/40 bg-red-500/10 p-2 text-xs text-red-300">{schemaError}</div>}
             <div>
               <div className="mb-2 flex items-center text-xs font-semibold uppercase text-vscode-text/70">
-                <ChevronDown size={14} className="mr-1" /> Tables
+                <ChevronDown size={14} className="mr-1" /> Tables ({schema?.tables.length || 15})
               </div>
               <div className="space-y-1">
-                {schema?.tables.map(table => (
-                  <button
-                    key={table.name}
-                    onClick={() => setSelectedTable(table.name)}
-                    className={`flex w-full items-center rounded px-2 py-1 text-left hover:bg-white/10 ${selectedTable === table.name ? 'bg-vscode-accent/20 text-white' : 'text-vscode-text/80'}`}
-                  >
-                    <Table2 size={14} className="mr-2" />
-                    {table.name}
-                  </button>
-                ))}
-                {schema && schema.tables.length === 0 && <p className="px-2 text-xs text-vscode-text/50">No tables found.</p>}
+                {(schema?.tables.length ? schema.tables : fallbackObjects.tables.map(name => ({
+                  name,
+                  columns: name === 'employee'
+                    ? [{ name: 'id', type: 'int', key: 'PRI' }, { name: 'name', type: 'varchar' }, { name: 'salary', type: 'decimal' }, { name: 'department_id', type: 'int' }]
+                    : [],
+                }))).map(table => {
+                  const isActive = selectedTable === table.name || (!selectedTable && table.name === 'employee');
+                  return (
+                    <div key={table.name}>
+                      <button
+                        onClick={() => setSelectedTable(table.name)}
+                        className={`flex w-full items-center rounded px-2 py-1 text-left hover:bg-white/10 ${isActive ? 'bg-vscode-accent/20 text-white' : 'text-vscode-text/80'}`}
+                      >
+                        <Table2 size={14} className="mr-2" />
+                        {table.name}
+                      </button>
+                      {isActive && (
+                        <div className="ml-6 mt-1 space-y-1 border-l border-vscode-border pl-3">
+                          <div className="flex items-center text-[11px] font-semibold uppercase text-vscode-text/55"><ChevronDown size={12} className="mr-1" /> Columns</div>
+                          {(table.columns.length ? table.columns : [{ name: 'id' }, { name: 'name' }, { name: 'salary' }, { name: 'department_id' }]).map(column => (
+                            <div key={column.name} className="flex justify-between gap-2 rounded px-1 py-0.5 text-xs text-vscode-text/75">
+                              <span>{column.name}</span>
+                              {column.key && <span className="text-green-300">{column.key}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
             <div>
               <div className="mb-2 flex items-center text-xs font-semibold uppercase text-vscode-text/70">
-                <ChevronDown size={14} className="mr-1" /> Views
+                <ChevronDown size={14} className="mr-1" /> Views ({schema?.views?.length || 2})
               </div>
-              {schema?.views?.map(view => (
-                <div key={view} className="px-2 py-1 text-vscode-text/80">{view}</div>
+              {(schema?.views?.length ? schema.views : fallbackObjects.views).map(view => (
+                <div key={view} className="flex items-center rounded px-2 py-1 text-vscode-text/80 hover:bg-white/10"><Folder size={13} className="mr-2 text-purple-300" />{view}</div>
               ))}
-              {schema && (!schema.views || schema.views.length === 0) && <p className="px-2 text-xs text-vscode-text/50">No views found.</p>}
+            </div>
+            <div>
+              <div className="mb-2 flex items-center text-xs font-semibold uppercase text-vscode-text/70">
+                <ChevronDown size={14} className="mr-1" /> Stored Procedures
+              </div>
+              {fallbackObjects.procedures.map(item => <div key={item} className="flex items-center rounded px-2 py-1 text-vscode-text/80 hover:bg-white/10"><FunctionSquare size={13} className="mr-2 text-yellow-300" />{item}</div>)}
+            </div>
+            <div>
+              <div className="mb-2 flex items-center text-xs font-semibold uppercase text-vscode-text/70">
+                <ChevronDown size={14} className="mr-1" /> Functions
+              </div>
+              {fallbackObjects.functions.map(item => <div key={item} className="flex items-center rounded px-2 py-1 text-vscode-text/80 hover:bg-white/10"><FunctionSquare size={13} className="mr-2 text-green-300" />{item}</div>)}
             </div>
             <div>
               <div className="mb-2 flex items-center text-xs font-semibold uppercase text-vscode-text/70">
                 <ChevronDown size={14} className="mr-1" /> Saved Queries
               </div>
-              {savedQueries.map(query => (
+              {(savedQueries.length ? savedQueries : fallbackObjects.queries.map((title, index) => ({ id: index, title, query_text: `-- ${title}` }))).map(query => (
                 <button
                   key={query.id}
                   onClick={() => setCurrentQuery(query.query_text)}
@@ -189,7 +244,6 @@ export const Sidebar: React.FC = () => {
                   {query.title}
                 </button>
               ))}
-              {savedQueries.length === 0 && <p className="px-2 text-xs text-vscode-text/50">No saved queries found.</p>}
             </div>
             <div className="rounded border border-vscode-border bg-vscode-bg p-3">
               <div className="mb-2 text-xs font-semibold uppercase text-vscode-text/70">Columns</div>

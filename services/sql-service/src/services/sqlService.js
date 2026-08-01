@@ -1,10 +1,12 @@
 import queryRepository from '../repositories/queryRepository.js';
 
-import { SQLTrie } from '../autocomplete/SQLTrie.js';
+import { LRUCache, SchemaGraph, SQLTrie } from '../../../../packages/algorithms/index.js';
 
 class SqlService {
     constructor() {
         this.trie = new SQLTrie();
+        this.schemaCache = new LRUCache(5);
+        this.readOnlyQueryCache = new LRUCache(50);
         this._initKeywords();
     }
 
@@ -14,41 +16,41 @@ class SqlService {
     }
 
     async getAutocompleteSuggestions(prefix = '') {
-        // Hybrid Approach: Trie (keywords) + Live Schema (tables/columns)
-        
-        // 1. Get Keywords from Trie
-        let suggestions = prefix ? this.trie.searchPrefix(prefix) : [];
-        
-        // 2. Get Live Schema Data
+        const autocompleteTrie = new SQLTrie();
+        this._getSqlDictionary().forEach(item => autocompleteTrie.insert(item.word, item));
+
         try {
             const schema = await this.getSchema();
-            const schemaSuggestions = [];
-            
             schema.tables.forEach(table => {
-                if (table.name.toLowerCase().startsWith(prefix.toLowerCase())) {
-                    schemaSuggestions.push({ word: table.name, type: 'table', label: table.name });
-                }
-
+                autocompleteTrie.insert(table.name, { type: 'table', label: table.name });
                 table.columns.forEach(column => {
-                    if (column.name.toLowerCase().startsWith(prefix.toLowerCase())) {
-                        schemaSuggestions.push({ word: column.name, type: 'column', label: `${table.name}.${column.name}` });
-                    }
+                    autocompleteTrie.insert(column.name, { type: 'column', label: `${table.name}.${column.name}` });
                 });
             });
-            
-            suggestions = [...suggestions, ...schemaSuggestions];
-            
-            // Deduplicate
-            const uniqueSuggestions = Array.from(new Set(suggestions.map(a => a.word)))
-                .map(word => {
-                return suggestions.find(a => a.word === word)
-            });
 
-            return uniqueSuggestions.slice(0, 20); // Return top 20
+            return this._dedupeSuggestions(autocompleteTrie.searchPrefix(prefix, 30)).slice(0, 20);
         } catch (error) {
             console.error("Autocomplete Schema Error", error);
-            return suggestions.slice(0, 20);
+            return this.trie.searchPrefix(prefix, 20);
         }
+    }
+
+    _getSqlDictionary() {
+        return [
+            'SELECT', 'FROM', 'WHERE', 'INSERT', 'UPDATE', 'DELETE', 'JOIN', 'INNER',
+            'LEFT', 'RIGHT', 'GROUP BY', 'ORDER BY', 'HAVING', 'LIMIT', 'COUNT',
+            'SUM', 'AVG', 'MIN', 'MAX'
+        ].map(word => ({ word, type: 'keyword', label: word }));
+    }
+
+    _dedupeSuggestions(suggestions) {
+        const seen = new Set();
+        return suggestions.filter(suggestion => {
+            const key = `${suggestion.type}:${suggestion.word.toLowerCase()}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
     }
 
     mapMysqlError(error) {
@@ -106,6 +108,26 @@ class SqlService {
                 throw new Error('Query not allowed');
             }
 
+            const cacheKey = `${userId || 'anonymous'}:${queryText}`;
+            if (this._isCacheableReadQuery(queryText)) {
+                const cachedResult = this.readOnlyQueryCache.get(cacheKey);
+                if (cachedResult) {
+                    const executionTime = Date.now() - startTime;
+                    if (userId) {
+                        queryRepository.logHistory(userId, queryText, status, executionTime).catch(err => {
+                            console.error('Failed to log query history:', err);
+                        });
+                    }
+
+                    return {
+                        ...cachedResult,
+                        cache: { hit: true, strategy: 'LRU' },
+                        executionTime,
+                        executionTimeMs: executionTime
+                    };
+                }
+            }
+
             const result = await queryRepository.executeQuery(queryText);
             const executionTime = Date.now() - startTime;
             const rowCount = Array.isArray(result.rows) && result.rows.length > 0
@@ -118,7 +140,7 @@ class SqlService {
                 });
             }
 
-            return {
+            const response = {
                 success: true,
                 rows: result.rows,
                 fields: result.fields,
@@ -129,6 +151,15 @@ class SqlService {
                 insertId: result.insertId,
                 warningStatus: result.warningStatus
             };
+
+            if (this._isCacheableReadQuery(queryText)) {
+                this.readOnlyQueryCache.put(cacheKey, response);
+            } else {
+                this.readOnlyQueryCache.clear();
+                this.schemaCache.clear();
+            }
+
+            return response;
         } catch (error) {
             status = 'error';
             const executionTime = Date.now() - startTime;
@@ -153,11 +184,50 @@ class SqlService {
     }
 
     async getSchema() {
-        return queryRepository.getSchema();
+        const cachedSchema = this.schemaCache.get('practice_db');
+        if (cachedSchema) return { ...cachedSchema, cache: { hit: true, strategy: 'LRU' } };
+
+        const schema = await queryRepository.getSchema();
+        this.schemaCache.put('practice_db', schema);
+        return schema;
+    }
+
+    async getSchemaGraph(startTable) {
+        const schema = await this.getSchema();
+        const graph = new SchemaGraph();
+
+        schema.tables.forEach(table => graph.addTable(table.name));
+        (schema.relationships || []).forEach(relationship => {
+            graph.addRelationship(relationship.table, relationship.referencedTable, {
+                column: relationship.column,
+                referencedColumn: relationship.referencedColumn,
+                direction: 'outbound'
+            });
+        });
+
+        const firstTable = startTable || schema.tables[0]?.name;
+        return {
+            database: schema.database,
+            relationships: schema.relationships || [],
+            traversal: firstTable ? {
+                startTable: firstTable,
+                bfs: graph.bfs(firstTable),
+                dfs: graph.dfs(firstTable)
+            } : null,
+            reactFlow: graph.toReactFlow()
+        };
     }
 
     async resetPracticeDatabase() {
-        return queryRepository.resetPracticeDatabase();
+        const schema = await queryRepository.resetPracticeDatabase();
+        this.schemaCache.clear();
+        this.readOnlyQueryCache.clear();
+        return schema;
+    }
+
+    _isCacheableReadQuery(sql) {
+        const normalized = sql.trim().replace(/;$/, '').toUpperCase();
+        return normalized.startsWith('SELECT') && !/\b(NOW|RAND|UUID|CURRENT_TIMESTAMP)\s*\(/.test(normalized);
     }
 
     async analyzeQuery(sql) {
