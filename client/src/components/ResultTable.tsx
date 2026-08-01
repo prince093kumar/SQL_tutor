@@ -22,17 +22,25 @@ export const ResultTable: React.FC = () => {
   }
 
   if (!queryResult.success) {
+    const errorMessage = typeof queryResult.error === 'string' ? queryResult.error : queryResult.error?.message;
+    const errorHint = typeof queryResult.error === 'object' ? queryResult.error?.hint : null;
+
     return (
       <div className="p-4 text-red-400 font-mono text-sm">
         <div className="flex items-center mb-2 font-bold">
           <AlertCircle size={16} className="mr-2" /> Error
         </div>
-        <div>{queryResult.error}</div>
+        <div>{errorMessage}</div>
+        {errorHint && <div className="mt-2 text-vscode-text opacity-70">{errorHint}</div>}
       </div>
     );
   }
 
-  const { rows, fields, executionTimeMs } = queryResult.data;
+  const rows = queryResult.rows || queryResult.data?.rows || [];
+  const fields = queryResult.fields || queryResult.data?.fields || [];
+  const executionTimeMs = queryResult.executionTimeMs || queryResult.executionTime || queryResult.data?.executionTimeMs || 0;
+  const rowCount = queryResult.rowCount ?? queryResult.data?.rowCount ?? rows.length;
+  const affectedRows = queryResult.affectedRows ?? queryResult.data?.affectedRows;
 
   return (
     <div className="flex flex-col h-full bg-vscode-bg">
@@ -41,12 +49,15 @@ export const ResultTable: React.FC = () => {
         <span className="mr-4">Success</span>
         <Clock size={14} className="mr-1 opacity-50" />
         <span className="opacity-70">{executionTimeMs} ms</span>
-        <span className="ml-4 opacity-70">{Array.isArray(rows) ? rows.length : 0} rows</span>
+        <span className="ml-4 opacity-70">{rowCount} rows</span>
+        {affectedRows > 0 && <span className="ml-4 opacity-70">{affectedRows} affected</span>}
       </div>
       
       <div className="flex-1 overflow-auto">
         {!Array.isArray(rows) || rows.length === 0 ? (
-          <div className="p-4 text-vscode-text opacity-70 text-sm">No rows returned.</div>
+          <div className="p-4 text-vscode-text opacity-70 text-sm">
+            Query completed successfully. No rows returned.
+          </div>
         ) : (
           <table className="w-full text-sm text-left border-collapse whitespace-nowrap">
             <thead className="bg-[#2a2d2e] text-vscode-text sticky top-0 z-10 shadow">

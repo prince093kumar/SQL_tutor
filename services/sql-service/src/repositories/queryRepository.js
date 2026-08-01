@@ -1,14 +1,20 @@
 import { appDb, practiceDb } from '../config/db.js';
+import { resetPracticeDatabase } from '../../database/init.js';
 
 class QueryRepository {
     // Execute raw SQL on the practice database
     async executeQuery(sql) {
-        try {
-            const [rows, fields] = await practiceDb.query(sql);
-            return { rows, fields };
-        } catch (error) {
-            throw error;
-        }
+        const [rows, fields] = await practiceDb.query(sql);
+        const isRowResult = Array.isArray(rows);
+
+        return {
+            rows: isRowResult ? rows : [],
+            fields: fields || [],
+            affectedRows: isRowResult ? 0 : rows.affectedRows ?? 0,
+            insertId: isRowResult ? 0 : rows.insertId ?? 0,
+            warningStatus: isRowResult ? 0 : rows.warningStatus ?? 0,
+            raw: rows
+        };
     }
 
     // Get execution plan
@@ -24,14 +30,44 @@ class QueryRepository {
 
     // Get schema info for ER Diagram
     async getSchema() {
-        // Query information_schema for tables and columns in sqllab_practice
-        const [columns] = await appDb.query(`
-            SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_KEY 
+        const [databaseRows] = await practiceDb.query('SELECT DATABASE() AS databaseName');
+        const database = databaseRows[0]?.databaseName || process.env.DB_PRACTICE_NAME || 'practice_db';
+
+        const [columns] = await practiceDb.query(`
+            SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_KEY
             FROM information_schema.COLUMNS 
-            WHERE TABLE_SCHEMA = 'practice_db'
+            WHERE TABLE_SCHEMA = DATABASE()
             ORDER BY TABLE_NAME, ORDINAL_POSITION
         `);
-        return columns;
+        const [views] = await practiceDb.query(`
+            SELECT TABLE_NAME
+            FROM information_schema.VIEWS
+            WHERE TABLE_SCHEMA = DATABASE()
+            ORDER BY TABLE_NAME
+        `);
+
+        const tables = columns.reduce((acc, column) => {
+            let table = acc.find(item => item.name === column.TABLE_NAME);
+            if (!table) {
+                table = { name: column.TABLE_NAME, columns: [] };
+                acc.push(table);
+            }
+
+            table.columns.push({
+                name: column.COLUMN_NAME,
+                type: column.DATA_TYPE,
+                key: column.COLUMN_KEY
+            });
+
+            return acc;
+        }, []);
+
+        return { database, tables, views: views.map(view => view.TABLE_NAME) };
+    }
+
+    async resetPracticeDatabase() {
+        await resetPracticeDatabase();
+        return this.getSchema();
     }
 
     // Save history
@@ -53,21 +89,42 @@ class QueryRepository {
     }
 
     // Save query
-    async saveQuery(userId, title, queryText) {
+    async saveQuery(userId, title, queryText, collection = 'Practice', notes = '') {
+        await appDb.query('ALTER TABLE saved_queries ADD COLUMN IF NOT EXISTS collection VARCHAR(50) DEFAULT "Practice"');
+        await appDb.query('ALTER TABLE saved_queries ADD COLUMN IF NOT EXISTS notes TEXT');
+        await appDb.query('ALTER TABLE saved_queries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
         const [result] = await appDb.query(
-            'INSERT INTO saved_queries (user_id, title, query_text) VALUES (?, ?, ?)',
-            [userId, title, queryText]
+            'INSERT INTO saved_queries (user_id, title, query_text, collection, notes) VALUES (?, ?, ?, ?, ?)',
+            [userId, title, queryText, collection, notes]
         );
         return result.insertId;
     }
 
     // Get saved queries
     async getSavedQueries(userId) {
+        await appDb.query('ALTER TABLE saved_queries ADD COLUMN IF NOT EXISTS collection VARCHAR(50) DEFAULT "Practice"');
+        await appDb.query('ALTER TABLE saved_queries ADD COLUMN IF NOT EXISTS notes TEXT');
+        await appDb.query('ALTER TABLE saved_queries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
         const [rows] = await appDb.query(
             'SELECT * FROM saved_queries WHERE user_id = ? ORDER BY created_at DESC',
             [userId]
         );
         return rows;
+    }
+
+    async updateSavedQuery(userId, id, data) {
+        await appDb.query(
+            'UPDATE saved_queries SET title = ?, query_text = ?, collection = ?, notes = ? WHERE id = ? AND user_id = ?',
+            [data.title, data.query, data.collection, data.notes || '', id, userId]
+        );
+        return { id, ...data };
+    }
+
+    async deleteSavedQuery(userId, id) {
+        await appDb.query('DELETE FROM saved_queries WHERE id = ? AND user_id = ?', [id, userId]);
+        return { id };
     }
 }
 

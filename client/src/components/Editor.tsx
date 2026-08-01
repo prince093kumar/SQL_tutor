@@ -12,11 +12,12 @@ export const Editor: React.FC = () => {
     setQueryResult(null);
     try {
       const { data } = await api.post('/sql/execute', { query: currentQuery });
-      setQueryResult({ success: true, data: data.data });
+      setQueryResult(data);
     } catch (error: any) {
+      const responseData = error.response?.data;
       setQueryResult({ 
         success: false, 
-        error: error.response?.data?.error || error.message 
+        error: responseData?.error || { message: error.message }
       });
     } finally {
       setIsExecuting(false);

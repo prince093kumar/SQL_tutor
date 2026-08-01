@@ -29,6 +29,14 @@ router.use('/sql', authMiddleware, rateLimiter, createProxyMiddleware({
     }
 }));
 
+router.use('/saved-queries', authMiddleware, createProxyMiddleware({
+    target: SQL_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+        '^/': '/api/v1/saved-queries/'
+    }
+}));
+
 // Challenge routes (Protected)
 router.use('/challenges', authMiddleware, createProxyMiddleware({
     target: CHALLENGE_SERVICE_URL,

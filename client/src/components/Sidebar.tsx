@@ -1,14 +1,35 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Database, Clock, Save, Code, Trophy, LayoutDashboard, Target } from 'lucide-react';
+import { Award, BarChart3, ChevronDown, Clock, Code, Database, FileCode2, LayoutDashboard, RefreshCw, Save, Table2, Target, Trophy, UserCircle } from 'lucide-react';
 import { useSqlStore } from '../store/useSqlStore';
 import api from '../utils/api';
+
+type SchemaColumn = {
+  name: string;
+  type?: string;
+  key?: string;
+};
+
+type SchemaTable = {
+  name: string;
+  columns: SchemaColumn[];
+};
+
+type DatabaseSchema = {
+  database: string;
+  tables: SchemaTable[];
+  views?: string[];
+};
 
 export const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { history, savedQueries, setCurrentQuery, setHistory, setSavedQueries } = useSqlStore();
   const [activeTab, setActiveTab] = React.useState<'playground' | 'history' | 'saved'>('playground');
+  const [schema, setSchema] = React.useState<DatabaseSchema | null>(null);
+  const [selectedTable, setSelectedTable] = React.useState<string>('');
+  const [schemaError, setSchemaError] = React.useState('');
+  const [isResetting, setIsResetting] = React.useState(false);
 
   const fetchHistory = async () => {
     try {
@@ -28,19 +49,54 @@ export const Sidebar: React.FC = () => {
     }
   };
 
+  const fetchSchema = async () => {
+    try {
+      setSchemaError('');
+      const { data } = await api.get('/sql/schema');
+      setSchema(data);
+      setSelectedTable(current => data.tables?.some((table: SchemaTable) => table.name === current) ? current : data.tables?.[0]?.name || '');
+    } catch (error: any) {
+      setSchemaError(error.response?.data?.error?.message || error.response?.data?.error || error.message);
+    }
+  };
+
+  const resetDatabase = async () => {
+    setIsResetting(true);
+    try {
+      const { data } = await api.post('/sql/reset');
+      setSchema(data);
+      setSelectedTable(data.tables?.[0]?.name || '');
+      setSchemaError('');
+    } catch (error: any) {
+      setSchemaError(error.response?.data?.error?.message || error.response?.data?.error || error.message);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   React.useEffect(() => {
     if (activeTab === 'history') fetchHistory();
     if (activeTab === 'saved') fetchSaved();
+    if (activeTab === 'playground') {
+      fetchSchema();
+      fetchSaved();
+    }
   }, [activeTab]);
+
+  const currentTable = schema?.tables.find(table => table.name === selectedTable);
 
   return (
     <div className="w-64 bg-vscode-sidebar border-r border-vscode-border flex flex-col h-full overflow-hidden text-sm">
       {/* Global Navigation */}
-      <div className="flex bg-vscode-bg border-b border-vscode-border p-2 space-x-2">
+      <div className="flex flex-wrap gap-1 bg-vscode-bg border-b border-vscode-border p-2">
         <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/')} title="Playground"><Code size={18} /></button>
         <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/challenges' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/challenges')} title="Challenges"><Target size={18} /></button>
         <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/leaderboard' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/leaderboard')} title="Leaderboard"><Trophy size={18} /></button>
         <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/analytics' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/analytics')} title="Analytics"><LayoutDashboard size={18} /></button>
+        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/progress' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/progress')} title="Progress"><BarChart3 size={18} /></button>
+        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/achievements' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/achievements')} title="Achievements"><Award size={18} /></button>
+        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/saved-queries' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/saved-queries')} title="Saved Queries"><FileCode2 size={18} /></button>
+        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/profile' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/profile')} title="Profile"><UserCircle size={18} /></button>
       </div>
 
       {/* Activity Bar for Playground */}
@@ -77,10 +133,75 @@ export const Sidebar: React.FC = () => {
         </h2>
         
         {activeTab === 'playground' && (
-          <div className="space-y-2">
-            <div className="flex items-center text-vscode-text opacity-70">
-              <Database size={16} className="mr-2" />
-              <span>sqllab_practice</span>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between text-vscode-text">
+              <div className="flex min-w-0 items-center">
+                <Database size={16} className="mr-2 shrink-0" />
+                <span className="truncate">{schema?.database || 'practice_db'}</span>
+              </div>
+              <button
+                onClick={resetDatabase}
+                disabled={isResetting}
+                className="rounded p-1 text-vscode-text/70 hover:bg-white/10 hover:text-white disabled:opacity-50"
+                title="Reset practice database"
+              >
+                <RefreshCw size={14} className={isResetting ? 'animate-spin' : ''} />
+              </button>
+            </div>
+            {schemaError && <div className="rounded border border-red-500/40 bg-red-500/10 p-2 text-xs text-red-300">{schemaError}</div>}
+            <div>
+              <div className="mb-2 flex items-center text-xs font-semibold uppercase text-vscode-text/70">
+                <ChevronDown size={14} className="mr-1" /> Tables
+              </div>
+              <div className="space-y-1">
+                {schema?.tables.map(table => (
+                  <button
+                    key={table.name}
+                    onClick={() => setSelectedTable(table.name)}
+                    className={`flex w-full items-center rounded px-2 py-1 text-left hover:bg-white/10 ${selectedTable === table.name ? 'bg-vscode-accent/20 text-white' : 'text-vscode-text/80'}`}
+                  >
+                    <Table2 size={14} className="mr-2" />
+                    {table.name}
+                  </button>
+                ))}
+                {schema && schema.tables.length === 0 && <p className="px-2 text-xs text-vscode-text/50">No tables found.</p>}
+              </div>
+            </div>
+            <div>
+              <div className="mb-2 flex items-center text-xs font-semibold uppercase text-vscode-text/70">
+                <ChevronDown size={14} className="mr-1" /> Views
+              </div>
+              {schema?.views?.map(view => (
+                <div key={view} className="px-2 py-1 text-vscode-text/80">{view}</div>
+              ))}
+              {schema && (!schema.views || schema.views.length === 0) && <p className="px-2 text-xs text-vscode-text/50">No views found.</p>}
+            </div>
+            <div>
+              <div className="mb-2 flex items-center text-xs font-semibold uppercase text-vscode-text/70">
+                <ChevronDown size={14} className="mr-1" /> Saved Queries
+              </div>
+              {savedQueries.map(query => (
+                <button
+                  key={query.id}
+                  onClick={() => setCurrentQuery(query.query_text)}
+                  className="block w-full rounded px-2 py-1 text-left text-vscode-text/80 hover:bg-white/10"
+                >
+                  {query.title}
+                </button>
+              ))}
+              {savedQueries.length === 0 && <p className="px-2 text-xs text-vscode-text/50">No saved queries found.</p>}
+            </div>
+            <div className="rounded border border-vscode-border bg-vscode-bg p-3">
+              <div className="mb-2 text-xs font-semibold uppercase text-vscode-text/70">Columns</div>
+              <div className="space-y-1">
+                {currentTable?.columns.map(column => (
+                  <div key={column.name} className="flex justify-between gap-2 text-xs text-vscode-text/80">
+                    <span>{column.name}</span>
+                    <span className="text-vscode-text/45">{column.type}</span>
+                  </div>
+                ))}
+                {!currentTable && <p className="text-xs text-vscode-text/50">Select a table.</p>}
+              </div>
             </div>
           </div>
         )}

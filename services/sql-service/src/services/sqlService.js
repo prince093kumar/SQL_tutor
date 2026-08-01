@@ -22,21 +22,18 @@ class SqlService {
         // 2. Get Live Schema Data
         try {
             const schema = await this.getSchema();
-            // schema is array of { TABLE_NAME, COLUMN_NAME }
             const schemaSuggestions = [];
             
-            const tables = [...new Set(schema.map(col => col.TABLE_NAME))];
-            
-            tables.forEach(table => {
-                if (table.toLowerCase().startsWith(prefix.toLowerCase())) {
-                    schemaSuggestions.push({ word: table, type: 'table', label: table });
+            schema.tables.forEach(table => {
+                if (table.name.toLowerCase().startsWith(prefix.toLowerCase())) {
+                    schemaSuggestions.push({ word: table.name, type: 'table', label: table.name });
                 }
-            });
-            
-            schema.forEach(col => {
-                if (col.COLUMN_NAME.toLowerCase().startsWith(prefix.toLowerCase())) {
-                    schemaSuggestions.push({ word: col.COLUMN_NAME, type: 'column', label: `${col.TABLE_NAME}.${col.COLUMN_NAME}` });
-                }
+
+                table.columns.forEach(column => {
+                    if (column.name.toLowerCase().startsWith(prefix.toLowerCase())) {
+                        schemaSuggestions.push({ word: column.name, type: 'column', label: `${table.name}.${column.name}` });
+                    }
+                });
             });
             
             suggestions = [...suggestions, ...schemaSuggestions];
@@ -53,11 +50,51 @@ class SqlService {
             return suggestions.slice(0, 20);
         }
     }
+
+    mapMysqlError(error) {
+        const errorMap = {
+            ER_NO_SUCH_TABLE: {
+                code: 'TABLE_NOT_FOUND',
+                message: "Table doesn't exist.",
+                hint: 'Create the table or reset the practice database.'
+            },
+            ER_BAD_FIELD_ERROR: {
+                code: 'COLUMN_NOT_FOUND',
+                message: "Column doesn't exist.",
+                hint: 'Check the column name in the Explorer schema.'
+            },
+            ER_PARSE_ERROR: {
+                code: 'SQL_SYNTAX_ERROR',
+                message: 'SQL syntax error.',
+                hint: 'Check SQL keywords, commas, and clause order.'
+            },
+            ER_DUP_ENTRY: {
+                code: 'DUPLICATE_VALUE',
+                message: 'Duplicate value.',
+                hint: 'Use a unique primary key or omit auto-increment id values.'
+            },
+            ER_NO_REFERENCED_ROW: {
+                code: 'FOREIGN_KEY_FAILED',
+                message: 'Foreign key constraint failed.',
+                hint: 'Insert the referenced parent row before inserting this record.'
+            },
+            ER_NO_REFERENCED_ROW_2: {
+                code: 'FOREIGN_KEY_FAILED',
+                message: 'Foreign key constraint failed.',
+                hint: 'Insert the referenced parent row before inserting this record.'
+            }
+        };
+
+        return errorMap[error.code] || {
+            code: error.code || 'SQL_ERROR',
+            message: error.sqlMessage || error.message || 'Query failed.',
+            hint: 'Review the query and database schema, then try again.'
+        };
+    }
+
     async executeQuery(userId, sql) {
         const startTime = Date.now();
         let status = 'success';
-        let result = null;
-        let errorMessage = null;
         
         // Basic sanitization
         const queryText = sql.trim();
@@ -69,29 +106,46 @@ class SqlService {
                 throw new Error('Query not allowed');
             }
 
-            result = await queryRepository.executeQuery(queryText);
+            const result = await queryRepository.executeQuery(queryText);
+            const executionTime = Date.now() - startTime;
+            const rowCount = Array.isArray(result.rows) && result.rows.length > 0
+                ? result.rows.length
+                : result.affectedRows;
+
+            if (userId) {
+                queryRepository.logHistory(userId, queryText, status, executionTime).catch(err => {
+                    console.error('Failed to log query history:', err);
+                });
+            }
+
+            return {
+                success: true,
+                rows: result.rows,
+                fields: result.fields,
+                executionTime,
+                executionTimeMs: executionTime,
+                rowCount,
+                affectedRows: result.affectedRows,
+                insertId: result.insertId,
+                warningStatus: result.warningStatus
+            };
         } catch (error) {
             status = 'error';
-            errorMessage = error.message;
-        }
-
-        const executionTimeMs = Date.now() - startTime;
-        
-        // Log history asynchronously
-        if (userId) {
-            queryRepository.logHistory(userId, queryText, status, executionTimeMs).catch(err => {
+            const executionTime = Date.now() - startTime;
+            if (userId) {
+                queryRepository.logHistory(userId, queryText, status, executionTime).catch(err => {
                 console.error('Failed to log query history:', err);
             });
-        }
+            }
 
-        if (status === 'error') {
-            throw new Error(errorMessage);
+            return {
+                success: false,
+                error: this.mapMysqlError(error),
+                executionTime,
+                executionTimeMs: executionTime,
+                rowCount: 0
+            };
         }
-
-        return {
-            ...result,
-            executionTimeMs
-        };
     }
 
     async getHistory(userId) {
@@ -100,6 +154,10 @@ class SqlService {
 
     async getSchema() {
         return queryRepository.getSchema();
+    }
+
+    async resetPracticeDatabase() {
+        return queryRepository.resetPracticeDatabase();
     }
 
     async analyzeQuery(sql) {
@@ -139,16 +197,27 @@ class SqlService {
         }
     }
 
-    async saveQuery(userId, title, sql) {
+    async saveQuery(userId, title, sql, collection = 'Practice', notes = '') {
         if (!title || !sql) {
             throw new Error('Title and query text are required');
         }
-        const id = await queryRepository.saveQuery(userId, title, sql);
-        return { id, title, queryText: sql };
+        const id = await queryRepository.saveQuery(userId, title, sql, collection, notes);
+        return { id, title, queryText: sql, collection, notes };
     }
 
     async getSavedQueries(userId) {
         return queryRepository.getSavedQueries(userId);
+    }
+
+    async updateSavedQuery(userId, id, data) {
+        if (!data.title || !data.query) {
+            throw new Error('Title and query text are required');
+        }
+        return queryRepository.updateSavedQuery(userId, id, data);
+    }
+
+    async deleteSavedQuery(userId, id) {
+        return queryRepository.deleteSavedQuery(userId, id);
     }
 }
 
