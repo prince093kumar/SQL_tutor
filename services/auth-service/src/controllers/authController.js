@@ -39,6 +39,20 @@ class AuthController {
             res.status(404).json({ error: error.message });
         }
     }
+
+    async updateProfile(req, res) {
+        try {
+            const userId = req.headers['x-user-id'];
+            if (!userId) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+            const { full_name, university } = req.body;
+            const user = await authService.updateProfile(userId, { full_name, university });
+            res.json({ message: 'Profile updated', data: user });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }
 
 export default new AuthController();

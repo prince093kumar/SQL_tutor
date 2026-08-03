@@ -76,7 +76,10 @@ const intensityClass = (count: number) => {
 
 export const Profile: React.FC = () => {
   const user = useAuthStore(state => state.user);
+  const updateUser = useAuthStore(state => state.updateUser);
   const [stats, setStats] = React.useState(fallbackStats);
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editForm, setEditForm] = React.useState({ full_name: user?.full_name || '', university: user?.university || '' });
 
   React.useEffect(() => {
     api.get('/challenges/profile-stats')
@@ -84,8 +87,18 @@ export const Profile: React.FC = () => {
       .catch(() => setStats(fallbackStats));
   }, []);
 
+  const handleSaveProfile = async () => {
+    try {
+      await api.put('/auth/profile', editForm);
+      updateUser(editForm);
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Failed to update profile', err);
+    }
+  };
+
   const username = user?.username || 'prince';
-  const displayName = username === 'prince' ? 'Prince Kumar' : username;
+  const displayName = user?.full_name || (username === 'prince' ? 'Prince Kumar' : username);
   const initials = displayName.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase();
   const heatmap = buildHeatmap(stats.activity);
 
@@ -95,17 +108,37 @@ export const Profile: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-8">
         <div className="max-w-6xl">
           <section className="rounded border border-vscode-border bg-vscode-sidebar p-6">
-            <div className="flex items-center justify-between gap-5">
-              <div className="flex items-center gap-5">
-                <div className="flex h-16 w-16 items-center justify-center rounded bg-vscode-accent text-xl font-semibold text-white">{initials}</div>
-                <div>
-                  <h1 className="text-2xl font-semibold text-white">{displayName}</h1>
-                  <p className="mt-1 text-sm text-vscode-text/65">@{username}</p>
-                  <p className="mt-1 text-sm text-vscode-text/80">SQL Learner</p>
+            {isEditing ? (
+              <div className="flex flex-col gap-4">
+                <h2 className="text-lg font-semibold text-white">Edit Profile</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-1 block text-sm text-vscode-text/80">Full Name</label>
+                    <input type="text" value={editForm.full_name} onChange={e => setEditForm({...editForm, full_name: e.target.value})} className="w-full rounded border border-vscode-border bg-vscode-bg px-3 py-2 text-white outline-none focus:border-vscode-accent" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm text-vscode-text/80">University / Institute</label>
+                    <input type="text" value={editForm.university} onChange={e => setEditForm({...editForm, university: e.target.value})} className="w-full rounded border border-vscode-border bg-vscode-bg px-3 py-2 text-white outline-none focus:border-vscode-accent" />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 mt-2">
+                  <button onClick={() => setIsEditing(false)} className="rounded border border-vscode-border px-4 py-2 text-sm hover:bg-white/5">Cancel</button>
+                  <button onClick={handleSaveProfile} className="rounded bg-vscode-accent px-4 py-2 text-sm text-white hover:bg-vscode-accent/80">Save Changes</button>
                 </div>
               </div>
-              <button className="flex items-center gap-2 rounded border border-vscode-border px-3 py-2 text-sm hover:bg-white/5"><Edit3 size={15} /> Edit Profile</button>
-            </div>
+            ) : (
+              <div className="flex items-center justify-between gap-5">
+                <div className="flex items-center gap-5">
+                  <div className="flex h-16 w-16 items-center justify-center rounded bg-vscode-accent text-xl font-semibold text-white">{initials}</div>
+                  <div>
+                    <h1 className="text-2xl font-semibold text-white">{displayName}</h1>
+                    <p className="mt-1 text-sm text-vscode-text/65">@{username}</p>
+                    <p className="mt-1 text-sm text-vscode-text/80">{user?.university || 'SQL Learner'}</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 rounded border border-vscode-border px-3 py-2 text-sm hover:bg-white/5"><Edit3 size={15} /> Edit Profile</button>
+              </div>
+            )}
           </section>
 
           <div className="mt-5 grid grid-cols-4 gap-4">

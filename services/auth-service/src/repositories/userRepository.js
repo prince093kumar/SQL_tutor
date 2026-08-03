@@ -12,7 +12,7 @@ class UserRepository {
     }
 
     async findById(id) {
-        const [rows] = await db.query('SELECT id, username, email, created_at, updated_at FROM users WHERE id = ?', [id]);
+        const [rows] = await db.query('SELECT id, username, email, full_name, university, created_at, updated_at FROM users WHERE id = ?', [id]);
         return rows[0];
     }
 
@@ -23,6 +23,14 @@ class UserRepository {
             [username, email, password_hash]
         );
         return result.insertId;
+    }
+
+    async updateProfile(id, profileData) {
+        const { full_name, university } = profileData;
+        await db.query(
+            'UPDATE users SET full_name = ?, university = ? WHERE id = ?',
+            [full_name, university, id]
+        );
     }
 }
 

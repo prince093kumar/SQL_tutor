@@ -11,6 +11,15 @@ const SQL_SERVICE_URL = process.env.SQL_SERVICE_URL || 'http://localhost:3002';
 const CHALLENGE_SERVICE_URL = process.env.CHALLENGE_SERVICE_URL || 'http://localhost:3003';
 const ANALYTICS_SERVICE_URL = process.env.ANALYTICS_SERVICE_URL || 'http://localhost:3004';
 
+// Protected Auth routes (Profile)
+router.use('/auth/profile', authMiddleware, createProxyMiddleware({
+    target: AUTH_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+        '^/': '/api/v1/auth/profile'
+    }
+}));
+
 // Auth routes (Public)
 router.use('/auth', createProxyMiddleware({
     target: AUTH_SERVICE_URL,

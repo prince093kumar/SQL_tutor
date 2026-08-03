@@ -112,12 +112,10 @@ export const Sidebar: React.FC = () => {
   return (
     <div className="flex h-full w-64 flex-col overflow-hidden border-r border-vscode-border bg-[#091421]/95 text-sm">
       {/* Global Navigation */}
-      <div className="grid grid-cols-7 gap-1 border-b border-vscode-border bg-[#07111d] p-2">
+      <div className="grid grid-cols-5 gap-1 border-b border-vscode-border bg-[#07111d] p-2">
         <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/')} title="Playground"><Code size={18} /></button>
         <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/challenges' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/challenges')} title="Challenges"><Target size={18} /></button>
         <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/leaderboard' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/leaderboard')} title="Leaderboard"><Trophy size={18} /></button>
-        <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/analytics' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/analytics')} title="Analytics"><LayoutDashboard size={18} /></button>
-        <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/progress' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/progress')} title="Progress"><BarChart3 size={18} /></button>
         <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/saved-queries' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/saved-queries')} title="Saved Queries"><FileCode2 size={18} /></button>
         <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/profile' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/profile')} title="Profile"><UserCircle size={18} /></button>
       </div>

@@ -97,7 +97,7 @@ class ChallengeRepository {
 
     async getLeaderboardCandidates() {
         const [rows] = await db.query(`
-            SELECT u.username, s.total_score, s.challenges_completed 
+            SELECT u.username, u.full_name, u.university, s.total_score, s.challenges_completed 
             FROM user_scores s
             JOIN auth_db.users u ON s.user_id = u.id
         `);

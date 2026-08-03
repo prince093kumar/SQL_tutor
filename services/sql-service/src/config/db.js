@@ -21,7 +21,7 @@ const practicePool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    multipleStatements: false // Security measure
+    multipleStatements: true // Allowed for shared image queries
 });
 
 export const appDb = appPool.promise();

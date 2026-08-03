@@ -46,9 +46,14 @@ class AuthService {
         const token = this.generateToken(user.id, user.username);
 
         return { 
-            user: { id: user.id, username: user.username, email: user.email }, 
+            user: { id: user.id, username: user.username, email: user.email, full_name: user.full_name, university: user.university }, 
             token 
         };
+    }
+
+    async updateProfile(userId, profileData) {
+        await userRepository.updateProfile(userId, profileData);
+        return this.getProfile(userId);
     }
 
     async getProfile(userId) {
