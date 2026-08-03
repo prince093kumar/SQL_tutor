@@ -11,7 +11,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY . .
 
 # Install all dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --filter auth-service...
 
 # Extract the auth-service and its dependencies
 RUN pnpm deploy --legacy --filter auth-service --prod /prod/auth-service

@@ -4,7 +4,7 @@ WORKDIR /app
 RUN npm i -g pnpm
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY . .
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --filter client...
 
 # Build the client
 WORKDIR /app/client

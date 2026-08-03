@@ -4,7 +4,7 @@ WORKDIR /app
 RUN npm i -g pnpm
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY . .
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --filter gateway...
 RUN pnpm deploy --legacy --filter gateway --prod /prod/gateway
 
 FROM node:22-alpine
