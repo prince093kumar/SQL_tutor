@@ -2,18 +2,10 @@
 
 This document outlines how to set up the necessary AWS infrastructure and Jenkins configuration to execute the `Jenkinsfile` CI/CD pipeline.
 
-## 1. AWS ECR Setup
+## 1. Docker Hub Setup
 
-You must create an Elastic Container Registry (ECR) for each of your Docker images.
-In the AWS Console, go to **ECR** and create the following **private** repositories:
-- `sqllab-client`
-- `sqllab-gateway`
-- `sqllab-auth-service`
-- `sqllab-sql-service`
-- `sqllab-challenge-service`
-- `sqllab-analytics-service`
-
-Keep track of your AWS Account ID (e.g., `123456789012`).
+This CI/CD pipeline pushes images to Docker Hub rather than AWS ECR.
+You don't need to manually create repositories; Docker Hub will create them automatically on the first push under your namespace (`prince093kumar`). 
 
 ## 2. Target EC2 Setup
 
@@ -30,7 +22,6 @@ The application will be deployed to a single EC2 instance using Docker Compose.
    sudo apt-get install docker.io docker-compose -y
    sudo usermod -aG docker ubuntu
    ```
-4. **Create an IAM Role** for the EC2 instance that allows pulling from ECR (`AmazonEC2ContainerRegistryReadOnly`), and attach it to the EC2 instance. This prevents you from needing AWS keys directly on the instance, though the Jenkins pipeline uses the AWS CLI to authenticate explicitly anyway.
 
 ## 3. Jenkins Configuration
 
@@ -38,14 +29,12 @@ Your Jenkins server will need specific plugins and credentials.
 
 ### Plugins Required
 - **Docker Pipeline**
-- **Amazon Web Services Credentials**
 - **SSH Agent**
 
 ### Credentials Configuration
-Add the following in Jenkins (Dashboard -> Manage Jenkins -> Credentials):
-1. **`aws-account-id`** (Secret text): Your 12-digit AWS account ID.
-2. **`aws-credentials`** (AWS Credentials type): An IAM user's Access Key ID and Secret Access Key. This IAM user needs permissions to push to ECR (`AmazonEC2ContainerRegistryPowerUser`).
-3. **`ec2-ssh-key`** (SSH Username with private key): 
+Based on your Jenkins setup, ensure the following credentials exist with exact IDs:
+1. **`dockerhub`** (Username with password): Your Docker Hub username (`prince093kumar`) and password/access token.
+2. **`aws-key`** (SSH Username with private key): 
    - Username: `ubuntu`
    - Private Key: The `.pem` key used to SSH into your EC2 instance.
 

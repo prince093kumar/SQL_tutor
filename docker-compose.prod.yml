@@ -27,7 +27,7 @@ services:
       - sqllab_network
 
   gateway:
-    image: ${ECR_REGISTRY:-}sqllab-gateway:latest
+    image: ${REGISTRY_PREFIX:-}sqllab-gateway:latest
     container_name: sqllab_gateway
     ports:
       - "3000:3000"
@@ -48,7 +48,7 @@ services:
       - sqllab_network
 
   auth-service:
-    image: ${ECR_REGISTRY:-}sqllab-auth-service:latest
+    image: ${REGISTRY_PREFIX:-}sqllab-auth-service:latest
     container_name: sqllab_auth
     environment:
       - PORT=3001
@@ -64,7 +64,7 @@ services:
       - sqllab_network
 
   sql-service:
-    image: ${ECR_REGISTRY:-}sqllab-sql-service:latest
+    image: ${REGISTRY_PREFIX:-}sqllab-sql-service:latest
     container_name: sqllab_sql
     environment:
       - PORT=3002
@@ -79,7 +79,7 @@ services:
       - sqllab_network
 
   challenge-service:
-    image: ${ECR_REGISTRY:-}sqllab-challenge-service:latest
+    image: ${REGISTRY_PREFIX:-}sqllab-challenge-service:latest
     container_name: sqllab_challenge
     environment:
       - PORT=3003
@@ -96,7 +96,7 @@ services:
       - sqllab_network
 
   analytics-service:
-    image: ${ECR_REGISTRY:-}sqllab-analytics-service:latest
+    image: ${REGISTRY_PREFIX:-}sqllab-analytics-service:latest
     container_name: sqllab_analytics
     environment:
       - PORT=3004
@@ -108,7 +108,7 @@ services:
       - sqllab_network
 
   client:
-    image: ${ECR_REGISTRY:-}sqllab-client:latest
+    image: ${REGISTRY_PREFIX:-}sqllab-client:latest
     container_name: sqllab_client
     ports:
       - "80:80"
