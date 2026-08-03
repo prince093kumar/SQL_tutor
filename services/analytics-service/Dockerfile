@@ -5,8 +5,8 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY .npmrc ./
 COPY . .
-RUN pnpm install --filter analytics-service... --frozen-lockfile
-RUN pnpm deploy --filter analytics-service --prod /prod/analytics-service
+RUN pnpm install --filter analytics-service...
+RUN pnpm deploy --legacy --filter analytics-service --prod /prod/analytics-service
 
 FROM node:22-alpine
 WORKDIR /app

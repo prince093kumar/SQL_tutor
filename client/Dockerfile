@@ -5,7 +5,7 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY .npmrc ./
 COPY . .
-RUN pnpm install --filter client... --frozen-lockfile
+RUN pnpm install --filter client...
 
 # Build the client
 WORKDIR /app/client

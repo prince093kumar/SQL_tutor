@@ -14,10 +14,10 @@ COPY services ./services
 COPY . .
 
 # Install all dependencies
-RUN pnpm install --filter auth-service... --frozen-lockfile
+RUN pnpm install --filter auth-service...
 
 # Extract the auth-service and its dependencies
-RUN pnpm deploy --filter auth-service --prod /prod/auth-service
+RUN pnpm deploy --legacy --filter auth-service --prod /prod/auth-service
 
 # Production image
 FROM node:22-alpine
