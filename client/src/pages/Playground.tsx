@@ -17,8 +17,7 @@ export const Playground: React.FC = () => {
     sizes, 
     collapsed,
     startResize, 
-    toggleCollapse,
-    setCollapsed
+    toggleCollapse
   } = useResizablePanels('sqllab.playground.layout.v', [
     { id: 'editor', defaultSize: 60, minSize: 20 },
     { id: 'results', defaultSize: 40, minSize: 15, collapsible: true }
@@ -27,9 +26,9 @@ export const Playground: React.FC = () => {
   // Auto-open results panel when query starts executing
   useEffect(() => {
     if (isExecuting && collapsed.results) {
-      setCollapsed(prev => ({ ...prev, results: false }));
+      toggleCollapse('results');
     }
-  }, [isExecuting, collapsed.results, setCollapsed]);
+  }, [isExecuting, collapsed.results, toggleCollapse]);
 
   return (
     <div className="app-shell flex h-screen flex-col overflow-hidden font-sans text-vscode-text">

@@ -14,7 +14,7 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 
 # Extract the auth-service and its dependencies
-RUN pnpm deploy --filter auth-service --prod /prod/auth-service
+RUN pnpm deploy --legacy --filter auth-service --prod /prod/auth-service
 
 # Production image
 FROM node:22-alpine
