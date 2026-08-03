@@ -1,27 +1,22 @@
-FROM node:22-alpine AS builder
+FROM node:22-alpine
+
 WORKDIR /app
 
-# Install pnpm
 RUN corepack enable
 
-# Copy root configurations
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY .npmrc ./
 
-# Copy packages and services
 COPY packages ./packages
-COPY services ./services
-COPY . .
+COPY services/auth-service ./services/auth-service
 
-# Install all dependencies
-RUN pnpm install --filter auth-service...
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install \
+    --filter auth-service... \
+    --prod
 
-# Extract the auth-service and its dependencies
-RUN pnpm deploy --legacy --filter auth-service --prod /prod/auth-service
+WORKDIR /app/services/auth-service
 
-# Production image
-FROM node:22-alpine
-WORKDIR /app
-COPY --from=builder /prod/auth-service .
 EXPOSE 3001
+
 CMD ["node", "src/server.js"]

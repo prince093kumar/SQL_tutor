@@ -1,15 +1,22 @@
-FROM node:22-alpine AS builder
+FROM node:22-alpine
+
 WORKDIR /app
 
 RUN corepack enable
+
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY .npmrc ./
-COPY . .
-RUN pnpm install --filter sql-service...
-RUN pnpm deploy --legacy --filter sql-service --prod /prod/sql-service
 
-FROM node:22-alpine
-WORKDIR /app
-COPY --from=builder /prod/sql-service .
+COPY packages ./packages
+COPY services/sql-service ./services/sql-service
+
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install \
+    --filter sql-service... \
+    --prod
+
+WORKDIR /app/services/sql-service
+
 EXPOSE 3002
+
 CMD ["node", "src/server.js"]

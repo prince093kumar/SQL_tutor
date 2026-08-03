@@ -1,15 +1,22 @@
-FROM node:22-alpine AS builder
+FROM node:22-alpine
+
 WORKDIR /app
 
 RUN corepack enable
+
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY .npmrc ./
-COPY . .
-RUN pnpm install --filter gateway...
-RUN pnpm deploy --legacy --filter gateway --prod /prod/gateway
 
-FROM node:22-alpine
-WORKDIR /app
-COPY --from=builder /prod/gateway .
+COPY packages ./packages
+COPY gateway ./gateway
+
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install \
+    --filter gateway... \
+    --prod
+
+WORKDIR /app/gateway
+
 EXPOSE 3000
+
 CMD ["node", "src/server.js"]

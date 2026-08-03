@@ -1,15 +1,22 @@
-FROM node:22-alpine AS builder
+FROM node:22-alpine
+
 WORKDIR /app
 
 RUN corepack enable
+
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY .npmrc ./
-COPY . .
-RUN pnpm install --filter challenge-service...
-RUN pnpm deploy --legacy --filter challenge-service --prod /prod/challenge-service
 
-FROM node:22-alpine
-WORKDIR /app
-COPY --from=builder /prod/challenge-service .
+COPY packages ./packages
+COPY services/challenge-service ./services/challenge-service
+
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install \
+    --filter challenge-service... \
+    --prod
+
+WORKDIR /app/services/challenge-service
+
 EXPOSE 3003
+
 CMD ["node", "src/server.js"]
