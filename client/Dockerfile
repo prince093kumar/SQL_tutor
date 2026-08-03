@@ -1,10 +1,11 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-RUN npm i -g pnpm
+RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .npmrc ./
 COPY . .
-RUN pnpm install --filter client...
+RUN pnpm install --filter client... --frozen-lockfile
 
 # Build the client
 WORKDIR /app/client

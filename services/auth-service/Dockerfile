@@ -2,16 +2,19 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Install pnpm
-RUN npm i -g pnpm
+RUN corepack enable
 
 # Copy root configurations
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .npmrc ./
 
-# Copy all source code (since workspaces depend on each other)
+# Copy packages and services
+COPY packages ./packages
+COPY services ./services
 COPY . .
 
 # Install all dependencies
-RUN pnpm install --filter auth-service...
+RUN pnpm install --filter auth-service... --frozen-lockfile
 
 # Extract the auth-service and its dependencies
 RUN pnpm deploy --legacy --filter auth-service --prod /prod/auth-service
