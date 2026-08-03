@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sqllab_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: sqllab
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./docker/mysql/seed_challenges.sql:/docker-entrypoint-initdb.d/02-seed-challenges.sql
+    restart: unless-stopped
+    networks:
+      - sqllab_network
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: sqllab_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - sqllab_network
+
+  gateway:
+    image: ${ECR_REGISTRY:-}sqllab-gateway:latest
+    container_name: sqllab_gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - SQL_SERVICE_URL=http://sql-service:3002
+      - CHALLENGE_SERVICE_URL=http://challenge-service:3003
+      - ANALYTICS_SERVICE_URL=http://analytics-service:3004
+      - JWT_SECRET=your_jwt_secret_change_in_prod
+    depends_on:
+      - auth-service
+      - sql-service
+      - challenge-service
+      - analytics-service
+    restart: unless-stopped
+    networks:
+      - sqllab_network
+
+  auth-service:
+    image: ${ECR_REGISTRY:-}sqllab-auth-service:latest
+    container_name: sqllab_auth
+    environment:
+      - PORT=3001
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=sqllab
+      - JWT_SECRET=your_jwt_secret_change_in_prod
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    networks:
+      - sqllab_network
+
+  sql-service:
+    image: ${ECR_REGISTRY:-}sqllab-sql-service:latest
+    container_name: sqllab_sql
+    environment:
+      - PORT=3002
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=sqllab
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    networks:
+      - sqllab_network
+
+  challenge-service:
+    image: ${ECR_REGISTRY:-}sqllab-challenge-service:latest
+    container_name: sqllab_challenge
+    environment:
+      - PORT=3003
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=sqllab
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mysql
+      - redis
+    restart: unless-stopped
+    networks:
+      - sqllab_network
+
+  analytics-service:
+    image: ${ECR_REGISTRY:-}sqllab-analytics-service:latest
+    container_name: sqllab_analytics
+    environment:
+      - PORT=3004
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - sqllab_network
+
+  client:
+    image: ${ECR_REGISTRY:-}sqllab-client:latest
+    container_name: sqllab_client
+    ports:
+      - "80:80"
+    depends_on:
+      - gateway
+    restart: unless-stopped
+    networks:
+      - sqllab_network
+
+networks:
+  sqllab_network:
+    driver: bridge
+
+volumes:
+  mysql_data:

@@ -1,9 +1,13 @@
 import React from 'react';
 import { useSqlStore } from '../store/useSqlStore';
-import { AlertCircle, CheckCircle2, Clipboard, Clock, Download, FileDown, Search } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clipboard, Clock, Download, FileDown, Search, X } from 'lucide-react';
 import api from '../utils/api';
 
-export const ResultTable: React.FC = () => {
+interface ResultTableProps {
+  onClose?: () => void;
+}
+
+export const ResultTable: React.FC<ResultTableProps> = ({ onClose }) => {
   const { currentQuery, queryResult, isExecuting } = useSqlStore();
   const [activeTab, setActiveTab] = React.useState<'result' | 'messages' | 'console' | 'plan' | 'history'>('result');
   const [search, setSearch] = React.useState('');
@@ -116,6 +120,11 @@ export const ResultTable: React.FC = () => {
             {tab === 'plan' ? 'Execution Plan' : tab}
           </button>
         ))}
+        {onClose && (
+          <button onClick={onClose} className="ml-auto px-3 py-2 text-vscode-text/55 hover:bg-white/10 hover:text-white" title="Close Panel">
+            <X size={14} />
+          </button>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-3 border-b border-vscode-border bg-[#091421] p-2 text-xs text-vscode-text">

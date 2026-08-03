@@ -1,16 +1,46 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import MonacoEditor from '@monaco-editor/react';
 import { useSqlStore } from '../store/useSqlStore';
-import { Clipboard, Eraser, Play, Redo2, Save, Sparkles, Undo2 } from 'lucide-react';
+import { Clipboard, Eraser, Play, Redo2, Save, Sparkles, Undo2, X } from 'lucide-react';
 import api from '../utils/api';
 
 export const Editor: React.FC = () => {
-  const { currentQuery, setCurrentQuery, setQueryResult, setIsExecuting, isExecuting } = useSqlStore();
+  const { 
+    tabs, 
+    activeTabId, 
+    currentQuery, 
+    setCurrentQuery, 
+    setQueryResult, 
+    setIsExecuting, 
+    isExecuting,
+    setActiveTab,
+    removeTab 
+  } = useSqlStore();
+  
   const [schema, setSchema] = React.useState('practice_db');
   const [limit, setLimit] = React.useState('100');
   const [executionMode, setExecutionMode] = React.useState('Auto Commit');
 
+  const activeTab = tabs.find(t => t.id === activeTabId);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleExecute();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentQuery, activeTabId]);
+
   const handleExecute = async () => {
+    if (!currentQuery.trim()) return;
     setIsExecuting(true);
     setQueryResult(null);
     try {
@@ -28,11 +58,14 @@ export const Editor: React.FC = () => {
   };
 
   const handleSave = async () => {
-    const title = prompt('Enter a title for this query:');
+    if (!activeTab) return;
+    const title = prompt('Enter a title for this query:', activeTab.title);
     if (!title) return;
     try {
-      await api.post('/sql/save', { title, query: currentQuery });
+      await api.post('/saved-queries', { title, query: currentQuery, collection: 'Playground Drafts' });
+      // TODO: Replace with Toast
       alert('Query saved successfully!');
+      useSqlStore.getState().updateTabStatus(activeTab.id, { isDirty: false, title });
     } catch (error: any) {
       alert('Failed to save: ' + (error.response?.data?.error || error.message));
     }
@@ -50,28 +83,68 @@ export const Editor: React.FC = () => {
     setCurrentQuery('');
   };
 
+  const handleCloseTab = (e: React.MouseEvent, tabId: string) => {
+    e.stopPropagation();
+    const tab = tabs.find(t => t.id === tabId);
+    if (tab?.isDirty) {
+      if (!window.confirm('You have unsaved changes. Close anyway?')) {
+        return;
+      }
+    }
+    removeTab(tabId);
+  };
+
   return (
     <div className="flex h-full flex-col border-b border-vscode-border bg-[#071019]">
+      {/* Tabs Header */}
+      <div className="flex items-center border-b border-vscode-border bg-[#0d1a28] overflow-x-auto custom-scrollbar">
+        {tabs.map(tab => (
+          <div 
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex min-w-[120px] max-w-[200px] cursor-pointer items-center justify-between border-r border-vscode-border px-3 py-2 text-xs transition-colors ${
+              tab.id === activeTabId 
+                ? 'bg-[#071019] text-white border-t-2 border-t-vscode-accent' 
+                : 'text-vscode-text/60 hover:bg-[#112233] border-t-2 border-t-transparent'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 overflow-hidden">
+              <span className="truncate">{tab.title}</span>
+              {tab.isDirty && <span className="text-vscode-accent">●</span>}
+            </div>
+            <button 
+              onClick={(e) => handleCloseTab(e, tab.id)}
+              className="ml-2 rounded-sm p-0.5 opacity-50 hover:bg-white/10 hover:opacity-100"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ))}
+      </div>
+
       <div className="flex items-center justify-between border-b border-vscode-border bg-[#0d1a28] p-2 text-vscode-text">
         <div className="flex items-center gap-3 text-sm">
-          <span className="rounded-md border border-vscode-accent/30 bg-vscode-accent/10 px-2 py-1 text-white">query.sql</span>
           <button className="icon-button p-1.5" title="Undo"><Undo2 size={15} /></button>
           <button className="icon-button p-1.5" title="Redo"><Redo2 size={15} /></button>
-          <button onClick={handleFormat} className="secondary-action flex items-center gap-1" title="Format SQL"><Sparkles size={14} /> Format SQL</button>
-          <button onClick={handleCopy} className="icon-button p-1.5" title="Copy"><Clipboard size={15} /></button>
-          <button onClick={handleClear} className="icon-button p-1.5" title="Clear"><Eraser size={15} /></button>
+          <button type="button" onClick={handleFormat} className="secondary-action flex items-center gap-1" title="Format SQL (Ctrl+Shift+F)"><Sparkles size={14} /> Format SQL</button>
+          <button type="button" onClick={handleCopy} className="icon-button p-1.5" title="Copy"><Clipboard size={15} /></button>
+          <button type="button" onClick={handleClear} className="icon-button p-1.5" title="Clear"><Eraser size={15} /></button>
         </div>
         <div className="flex space-x-2">
           <button 
+            type="button"
             onClick={handleExecute}
             disabled={isExecuting}
             className="primary-action flex items-center"
+            title="Run Query (Ctrl+Enter)"
           >
             <Play size={14} className="mr-1" /> {isExecuting ? 'Running...' : 'Run'}
           </button>
           <button 
+            type="button"
             onClick={handleSave}
             className="secondary-action flex items-center"
+            title="Save Query (Ctrl+S)"
           >
             <Save size={14} className="mr-1" /> Save
           </button>
@@ -96,7 +169,7 @@ export const Editor: React.FC = () => {
           </select>
         </label>
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-h-0">
         <MonacoEditor
           height="100%"
           language="sql"

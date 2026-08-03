@@ -9,6 +9,7 @@ import { Progress } from './pages/Progress';
 import { SavedQueries } from './pages/SavedQueries';
 import { Profile } from './pages/Profile';
 import { useAuthStore } from './store/useAuthStore';
+import { ToastContainer } from './components/common/ToastContainer';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -23,25 +24,29 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Auth />} />
-        <Route 
-          path="/" 
-          element={
-            <ProtectedRoute>
-              <Playground />
-            </ProtectedRoute>
-          } 
-        />
-        <Route path="/challenges" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
-        <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-        <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-        <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
-        <Route path="/saved-queries" element={<ProtectedRoute><SavedQueries /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      </Routes>
-    </BrowserRouter>
+    <>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Auth />} />
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <Playground />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="/challenges" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
+          <Route path="/challenges/:challengeId" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
+          <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+          <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
+          <Route path="/saved-queries" element={<ProtectedRoute><SavedQueries /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        </Routes>
+      </BrowserRouter>
+      <ToastContainer />
+    </>
   );
 }
 
