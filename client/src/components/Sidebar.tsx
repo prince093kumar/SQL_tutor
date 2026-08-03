@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  BarChart3,
   ChevronDown,
   Clock,
   Code,
@@ -9,7 +8,6 @@ import {
   FileCode2,
   Folder,
   FunctionSquare,
-  LayoutDashboard,
   RefreshCw,
   Save,
   Table2,
