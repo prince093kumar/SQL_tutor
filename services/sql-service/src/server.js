@@ -26,6 +26,7 @@ router.delete('/saved/:id', sqlController.deleteSaved.bind(sqlController));
 router.get('/autocomplete', sqlController.getAutocomplete.bind(sqlController));
 router.get('/schema', sqlController.getSchema.bind(sqlController));
 router.get('/schema/graph', sqlController.getSchemaGraph.bind(sqlController));
+router.post('/analyze', sqlController.analyze.bind(sqlController));
 router.post('/reset', sqlController.reset.bind(sqlController));
 
 app.use('/api/v1/sql', router);

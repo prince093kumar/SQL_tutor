@@ -6,7 +6,6 @@ import { Challenges } from './pages/Challenges';
 import { Leaderboard } from './pages/Leaderboard';
 import { Analytics } from './pages/Analytics';
 import { Progress } from './pages/Progress';
-import { Achievements } from './pages/Achievements';
 import { SavedQueries } from './pages/SavedQueries';
 import { Profile } from './pages/Profile';
 import { useAuthStore } from './store/useAuthStore';
@@ -39,7 +38,6 @@ function App() {
         <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
         <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
         <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
-        <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
         <Route path="/saved-queries" element={<ProtectedRoute><SavedQueries /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       </Routes>

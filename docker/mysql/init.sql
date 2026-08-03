@@ -37,6 +37,9 @@ CREATE TABLE IF NOT EXISTS saved_queries (
     user_id INT NOT NULL, -- Logical FK to auth_db.users
     title VARCHAR(100) NOT NULL,
     query_text TEXT NOT NULL,
+    collection VARCHAR(50) DEFAULT 'Practice',
+    notes TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -56,9 +59,20 @@ USE challenge_db;
 
 CREATE TABLE IF NOT EXISTS challenges (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    slug VARCHAR(120) NOT NULL UNIQUE,
     title VARCHAR(100) NOT NULL,
     description TEXT NOT NULL,
     difficulty ENUM('easy', 'medium', 'hard') NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    operation VARCHAR(50) NOT NULL,
+    tables_json JSON,
+    constraints_json JSON,
+    sample_test_cases JSON,
+    hidden_test_cases JSON,
+    expected_result JSON,
+    xp INT DEFAULT 10,
+    acceptance_rate DECIMAL(5,2) DEFAULT 80.00,
+    submission_count INT DEFAULT 0,
     expected_query TEXT NOT NULL,
     schema_setup TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -82,17 +96,21 @@ CREATE TABLE IF NOT EXISTS user_scores (
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS challenge_bookmarks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    challenge_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_challenge_bookmark (user_id, challenge_id),
+    FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE
+);
+
 -- ==========================================
 -- 4. ANALYTICS SERVICE DATABASE
 -- ==========================================
 USE analytics_db;
 
-CREATE TABLE IF NOT EXISTS achievements (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL, -- Logical FK to auth_db.users
-    badge_name VARCHAR(50) NOT NULL,
-    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+DROP TABLE IF EXISTS achievements;
 
 CREATE TABLE IF NOT EXISTS daily_progress (
     id INT AUTO_INCREMENT PRIMARY KEY,

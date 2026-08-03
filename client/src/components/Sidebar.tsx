@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Award,
   BarChart3,
   ChevronDown,
   Clock,
@@ -111,38 +110,37 @@ export const Sidebar: React.FC = () => {
   const currentTable = schema?.tables.find(table => table.name === selectedTable);
 
   return (
-    <div className="w-64 bg-vscode-sidebar border-r border-vscode-border flex flex-col h-full overflow-hidden text-sm">
+    <div className="flex h-full w-64 flex-col overflow-hidden border-r border-vscode-border bg-[#091421]/95 text-sm">
       {/* Global Navigation */}
-      <div className="flex flex-wrap gap-1 bg-vscode-bg border-b border-vscode-border p-2">
-        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/')} title="Playground"><Code size={18} /></button>
-        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/challenges' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/challenges')} title="Challenges"><Target size={18} /></button>
-        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/leaderboard' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/leaderboard')} title="Leaderboard"><Trophy size={18} /></button>
-        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/analytics' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/analytics')} title="Analytics"><LayoutDashboard size={18} /></button>
-        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/progress' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/progress')} title="Progress"><BarChart3 size={18} /></button>
-        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/achievements' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/achievements')} title="Achievements"><Award size={18} /></button>
-        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/saved-queries' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/saved-queries')} title="Saved Queries"><FileCode2 size={18} /></button>
-        <button className={`p-2 rounded hover:bg-white/10 ${location.pathname === '/profile' ? 'text-vscode-accent' : 'text-vscode-text'}`} onClick={() => navigate('/profile')} title="Profile"><UserCircle size={18} /></button>
+      <div className="grid grid-cols-7 gap-1 border-b border-vscode-border bg-[#07111d] p-2">
+        <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/')} title="Playground"><Code size={18} /></button>
+        <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/challenges' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/challenges')} title="Challenges"><Target size={18} /></button>
+        <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/leaderboard' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/leaderboard')} title="Leaderboard"><Trophy size={18} /></button>
+        <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/analytics' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/analytics')} title="Analytics"><LayoutDashboard size={18} /></button>
+        <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/progress' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/progress')} title="Progress"><BarChart3 size={18} /></button>
+        <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/saved-queries' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/saved-queries')} title="Saved Queries"><FileCode2 size={18} /></button>
+        <button className={`rounded-md p-2 transition hover:bg-white/10 ${location.pathname === '/profile' ? 'bg-vscode-accent/15 text-vscode-accent shadow-[inset_0_-2px_0_#2f8cff]' : 'text-vscode-text'}`} onClick={() => navigate('/profile')} title="Profile"><UserCircle size={18} /></button>
       </div>
 
       {/* Activity Bar for Playground */}
       {location.pathname === '/' && (
-        <div className="flex bg-[#252526] border-b border-vscode-border p-2 space-x-4">
+        <div className="flex space-x-4 border-b border-vscode-border bg-[#0d1a28] p-2">
           <button 
-            className={`p-2 rounded hover:bg-white/10 ${activeTab === 'playground' ? 'text-vscode-accent' : 'text-vscode-text'}`}
+            className={`rounded-md p-2 transition hover:bg-white/10 ${activeTab === 'playground' ? 'bg-vscode-accent/15 text-vscode-accent' : 'text-vscode-text'}`}
             onClick={() => setActiveTab('playground')}
             title="Explorer"
           >
             <Database size={18} />
           </button>
         <button 
-          className={`p-2 rounded hover:bg-white/10 ${activeTab === 'saved' ? 'text-vscode-accent' : 'text-vscode-text'}`}
+          className={`rounded-md p-2 transition hover:bg-white/10 ${activeTab === 'saved' ? 'bg-vscode-accent/15 text-vscode-accent' : 'text-vscode-text'}`}
           onClick={() => setActiveTab('saved')}
           title="Saved Queries"
         >
           <Save size={20} />
         </button>
         <button 
-          className={`p-2 rounded hover:bg-white/10 ${activeTab === 'history' ? 'text-vscode-accent' : 'text-vscode-text'}`}
+          className={`rounded-md p-2 transition hover:bg-white/10 ${activeTab === 'history' ? 'bg-vscode-accent/15 text-vscode-accent' : 'text-vscode-text'}`}
           onClick={() => setActiveTab('history')}
           title="History"
         >
@@ -152,22 +150,22 @@ export const Sidebar: React.FC = () => {
       )}
 
       {/* Explorer Content */}
-      <div className="flex-1 overflow-y-auto p-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-vscode-text mb-4">
+      <div className="flex-1 overflow-y-auto p-3">
+        <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-vscode-text/70">
           {activeTab === 'playground' ? 'EXPLORER' : activeTab === 'saved' ? 'SAVED QUERIES' : 'HISTORY'}
         </h2>
         
         {activeTab === 'playground' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between text-vscode-text">
-              <div className="flex min-w-0 items-center">
+              <div className="flex min-w-0 items-center text-white">
                 <Database size={16} className="mr-2 shrink-0" />
                 <span className="truncate">{schema?.database || 'practice_db'}</span>
               </div>
               <button
                 onClick={resetDatabase}
                 disabled={isResetting}
-                className="rounded p-1 text-vscode-text/70 hover:bg-white/10 hover:text-white disabled:opacity-50"
+                className="rounded-md p-1 text-vscode-text/70 hover:bg-white/10 hover:text-white disabled:opacity-50"
                 title="Reset practice database"
               >
                 <RefreshCw size={14} className={isResetting ? 'animate-spin' : ''} />
@@ -190,16 +188,16 @@ export const Sidebar: React.FC = () => {
                     <div key={table.name}>
                       <button
                         onClick={() => setSelectedTable(table.name)}
-                        className={`flex w-full items-center rounded px-2 py-1 text-left hover:bg-white/10 ${isActive ? 'bg-vscode-accent/20 text-white' : 'text-vscode-text/80'}`}
+                        className={`flex w-full items-center rounded-md px-3 py-2 text-left transition hover:bg-white/[0.08] ${isActive ? 'bg-gradient-to-r from-vscode-accent/20 to-violet-500/10 text-white shadow-sm' : 'text-vscode-text/90'}`}
                       >
-                        <Table2 size={14} className="mr-2" />
+                        <Table2 size={16} className="mr-2 text-blue-400" />
                         {table.name}
                       </button>
                       {isActive && (
                         <div className="ml-6 mt-1 space-y-1 border-l border-vscode-border pl-3">
                           <div className="flex items-center text-[11px] font-semibold uppercase text-vscode-text/55"><ChevronDown size={12} className="mr-1" /> Columns</div>
                           {(table.columns.length ? table.columns : [{ name: 'id' }, { name: 'name' }, { name: 'salary' }, { name: 'department_id' }]).map(column => (
-                            <div key={column.name} className="flex justify-between gap-2 rounded px-1 py-0.5 text-xs text-vscode-text/75">
+                            <div key={column.name} className="flex justify-between gap-2 rounded px-1 py-0.5 text-xs text-vscode-text/75 hover:bg-white/[0.04]">
                               <span>{column.name}</span>
                               {column.key && <span className="text-green-300">{column.key}</span>}
                             </div>
@@ -216,20 +214,20 @@ export const Sidebar: React.FC = () => {
                 <ChevronDown size={14} className="mr-1" /> Views ({schema?.views?.length || 2})
               </div>
               {(schema?.views?.length ? schema.views : fallbackObjects.views).map(view => (
-                <div key={view} className="flex items-center rounded px-2 py-1 text-vscode-text/80 hover:bg-white/10"><Folder size={13} className="mr-2 text-purple-300" />{view}</div>
+                <div key={view} className="flex items-center rounded-md px-3 py-2 text-vscode-text/90 hover:bg-white/[0.08] cursor-pointer transition-colors"><Folder size={15} className="mr-2 text-purple-300" />{view}</div>
               ))}
             </div>
             <div>
               <div className="mb-2 flex items-center text-xs font-semibold uppercase text-vscode-text/70">
                 <ChevronDown size={14} className="mr-1" /> Stored Procedures
               </div>
-              {fallbackObjects.procedures.map(item => <div key={item} className="flex items-center rounded px-2 py-1 text-vscode-text/80 hover:bg-white/10"><FunctionSquare size={13} className="mr-2 text-yellow-300" />{item}</div>)}
+              {fallbackObjects.procedures.map(item => <div key={item} className="flex items-center rounded-md px-3 py-2 text-vscode-text/90 hover:bg-white/[0.08] cursor-pointer transition-colors"><FunctionSquare size={15} className="mr-2 text-yellow-300" />{item}</div>)}
             </div>
             <div>
               <div className="mb-2 flex items-center text-xs font-semibold uppercase text-vscode-text/70">
                 <ChevronDown size={14} className="mr-1" /> Functions
               </div>
-              {fallbackObjects.functions.map(item => <div key={item} className="flex items-center rounded px-2 py-1 text-vscode-text/80 hover:bg-white/10"><FunctionSquare size={13} className="mr-2 text-green-300" />{item}</div>)}
+              {fallbackObjects.functions.map(item => <div key={item} className="flex items-center rounded-md px-3 py-2 text-vscode-text/90 hover:bg-white/[0.08] cursor-pointer transition-colors"><FunctionSquare size={15} className="mr-2 text-green-300" />{item}</div>)}
             </div>
             <div>
               <div className="mb-2 flex items-center text-xs font-semibold uppercase text-vscode-text/70">
@@ -239,13 +237,13 @@ export const Sidebar: React.FC = () => {
                 <button
                   key={query.id}
                   onClick={() => setCurrentQuery(query.query_text)}
-                  className="block w-full rounded px-2 py-1 text-left text-vscode-text/80 hover:bg-white/10"
+                  className="block w-full rounded-md px-3 py-2 text-left text-vscode-text/90 hover:bg-white/[0.08] transition-colors"
                 >
                   {query.title}
                 </button>
               ))}
             </div>
-            <div className="rounded border border-vscode-border bg-vscode-bg p-3">
+            <div className="rounded-lg border border-vscode-border bg-[#07111d] p-3">
               <div className="mb-2 text-xs font-semibold uppercase text-vscode-text/70">Columns</div>
               <div className="space-y-1">
                 {currentTable?.columns.map(column => (

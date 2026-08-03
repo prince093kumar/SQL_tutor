@@ -22,11 +22,14 @@ router.get('/categories', challengeController.getCategories.bind(challengeContro
 router.get('/difficulties', challengeController.getDifficulties.bind(challengeController));
 router.get('/leaderboard', challengeController.getLeaderboard.bind(challengeController));
 router.get('/recommended', challengeController.getRecommendedChallenges.bind(challengeController));
+router.get('/profile-stats', challengeController.getProfileStats.bind(challengeController));
+router.post('/:id/bookmark', challengeController.toggleBookmark.bind(challengeController));
 router.get('/:id', challengeController.getChallengeById.bind(challengeController));
 router.post('/run', challengeController.runChallenge.bind(challengeController));
 router.post('/submit', challengeController.submitChallenge.bind(challengeController));
 
 app.use('/api/v1/challenges', router);
+app.get('/api/v1/search', challengeController.globalSearch.bind(challengeController));
 
 app.listen(PORT, () => {
     console.log(`Challenge service listening on port ${PORT}`);

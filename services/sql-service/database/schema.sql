@@ -13,9 +13,11 @@ CREATE TABLE IF NOT EXISTS employee (
     name VARCHAR(100) NOT NULL,
     department VARCHAR(100),
     department_id INT,
+    manager_id INT,
     salary DECIMAL(10,2),
     hire_date DATE,
-    FOREIGN KEY (department_id) REFERENCES department(id)
+    FOREIGN KEY (department_id) REFERENCES department(id),
+    FOREIGN KEY (manager_id) REFERENCES employee(id)
 );
 
 CREATE TABLE IF NOT EXISTS salary (
@@ -30,7 +32,9 @@ CREATE TABLE IF NOT EXISTS customers (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(150),
-    city VARCHAR(100)
+    city VARCHAR(100),
+    country VARCHAR(100) DEFAULT 'India',
+    status VARCHAR(20) DEFAULT 'active'
 );
 
 CREATE TABLE IF NOT EXISTS products (
@@ -45,7 +49,38 @@ CREATE TABLE IF NOT EXISTS orders (
     customer_id INT NOT NULL,
     order_date DATE NOT NULL,
     total DECIMAL(10,2) NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (customer_id) REFERENCES customers(id)
+);
+
+CREATE TABLE IF NOT EXISTS order_items (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    order_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+CREATE TABLE IF NOT EXISTS suppliers (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150),
+    status VARCHAR(20) DEFAULT 'active'
+);
+
+CREATE TABLE IF NOT EXISTS categories (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    parent_id INT,
+    FOREIGN KEY (parent_id) REFERENCES categories(id)
+);
+
+CREATE TABLE IF NOT EXISTS services (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10,2)
 );
 
 CREATE TABLE IF NOT EXISTS inventory (

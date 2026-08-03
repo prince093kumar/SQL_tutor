@@ -3,7 +3,8 @@ import challengeService from '../services/challengeService.js';
 class ChallengeController {
     async getChallenges(req, res) {
         try {
-            const data = await challengeService.getChallenges();
+            const userId = req.headers['x-user-id'];
+            const data = await challengeService.getChallenges(req.query, userId);
             res.json({ data });
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -74,6 +75,48 @@ class ChallengeController {
 
             const data = await challengeService.getRecommendedChallenges(userId, req.query.limit);
             res.json({ data });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async toggleBookmark(req, res) {
+        try {
+            const userId = req.headers['x-user-id'];
+            if (!userId) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+
+            const data = await challengeService.toggleBookmark(userId, req.params.id);
+            res.json({ data });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getProfileStats(req, res) {
+        try {
+            const userId = req.headers['x-user-id'];
+            if (!userId) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+
+            const data = await challengeService.getProfileStats(userId);
+            res.json({ data });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async globalSearch(req, res) {
+        try {
+            const userId = req.headers['x-user-id'];
+            if (!userId) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+
+            const data = await challengeService.globalSearch(req.query.q || '', userId);
+            res.json(data);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

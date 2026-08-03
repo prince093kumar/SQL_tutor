@@ -46,6 +46,14 @@ router.use('/challenges', authMiddleware, createProxyMiddleware({
     }
 }));
 
+router.use('/search', authMiddleware, createProxyMiddleware({
+    target: CHALLENGE_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+        '^/': '/api/v1/search/'
+    }
+}));
+
 // Analytics routes (Protected)
 router.use('/analytics', authMiddleware, createProxyMiddleware({
     target: ANALYTICS_SERVICE_URL,

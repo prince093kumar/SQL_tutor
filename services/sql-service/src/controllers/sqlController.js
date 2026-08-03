@@ -127,6 +127,23 @@ class SqlController {
         }
     }
 
+    async analyze(req, res) {
+        try {
+            const { query } = req.body;
+            if (!query) {
+                return res.status(400).json({ error: 'SQL query is required.' });
+            }
+
+            const data = await sqlService.analyzeQuery(query);
+            if (data.error) {
+                return res.status(400).json(data);
+            }
+            res.json({ data });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     async reset(req, res) {
         try {
             const data = await sqlService.resetPracticeDatabase();

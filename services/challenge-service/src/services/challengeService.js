@@ -3,8 +3,8 @@ import axios from 'axios';
 import { MaxHeap, PriorityQueue } from '../../../../packages/algorithms/index.js';
 
 class ChallengeService {
-    async getChallenges() {
-        return challengeRepository.getChallenges();
+    async getChallenges(filters = {}, userId = null) {
+        return challengeRepository.getChallenges(filters, userId);
     }
 
     async getChallengeById(id) {
@@ -35,19 +35,57 @@ class ChallengeService {
         if (!challenge) throw new Error('Challenge not found');
 
         const sqlServiceUrl = process.env.SQL_SERVICE_URL || 'http://localhost:3002/api/v1/sql';
-        const response = await axios.post(`${sqlServiceUrl}/execute`, { query: queryText }, { headers: { 'x-user-id': userId } });
-        const data = response.data;
+        
+        // Execute user query
+        const userRes = await axios.post(
+            `${sqlServiceUrl}/execute`,
+            { query: queryText },
+            {
+                headers: { 'x-user-id': userId },
+                validateStatus: statusCode => statusCode < 500
+            }
+        );
+        const data = userRes.data;
+
+        if (!data.success) {
+            return {
+                success: false,
+                rows: [],
+                fields: [],
+                executionTimeMs: data.executionTimeMs || data.executionTime || 0,
+                rowCount: 0,
+                sampleTests: [{ name: 'Sample Case 1', status: 'failed' }],
+                error: data.error
+            };
+        }
+
+        // Execute expected query for comparison
+        let isCorrect = false;
+        try {
+            const expectedRes = await axios.post(`${sqlServiceUrl}/execute`, { query: challenge.expected_query }, {
+                headers: { 'x-user-id': userId },
+                validateStatus: statusCode => statusCode < 500
+            });
+            
+            if (expectedRes.data.success) {
+                const userRows = data.rows || [];
+                const expectedRows = expectedRes.data.rows || [];
+                isCorrect = JSON.stringify(userRows) === JSON.stringify(expectedRows);
+            }
+        } catch (error) {
+            console.error("Failed to run expected query:", error);
+        }
 
         return {
-            success: data.success,
+            success: true,
             rows: data.rows || [],
             fields: data.fields || [],
-            executionTime: data.executionTime,
-            rowCount: data.rowCount,
-            sampleTests: data.success
+            executionTimeMs: data.executionTimeMs || data.executionTime || 0,
+            rowCount: data.rowCount || 0,
+            sampleTests: isCorrect
                 ? [{ name: 'Sample Case 1', status: 'passed' }, { name: 'Sample Case 2', status: 'passed' }]
                 : [{ name: 'Sample Case 1', status: 'failed' }],
-            error: data.error
+            error: null
         };
     }
 
@@ -58,15 +96,28 @@ class ChallengeService {
         let status = 'failed';
         let executionTimeMs = 0;
         let isCorrect = false;
+        let error = null;
         
         try {
             const sqlServiceUrl = process.env.SQL_SERVICE_URL || 'http://localhost:3002/api/v1/sql';
             
             // Execute user query
-            const userRes = await axios.post(`${sqlServiceUrl}/execute`, { query: queryText }, { headers: { 'x-user-id': userId } });
+            const userRes = await axios.post(`${sqlServiceUrl}/execute`, { query: queryText }, {
+                headers: { 'x-user-id': userId },
+                validateStatus: statusCode => statusCode < 500
+            });
+            if (!userRes.data.success) {
+                throw new Error(userRes.data.error?.message || userRes.data.error || 'User query failed');
+            }
             
             // Execute expected query
-            const expectedRes = await axios.post(`${sqlServiceUrl}/execute`, { query: challenge.expected_query }, { headers: { 'x-user-id': userId } });
+            const expectedRes = await axios.post(`${sqlServiceUrl}/execute`, { query: challenge.expected_query }, {
+                headers: { 'x-user-id': userId },
+                validateStatus: statusCode => statusCode < 500
+            });
+            if (!expectedRes.data.success) {
+                throw new Error(expectedRes.data.error?.message || expectedRes.data.error || 'Expected query failed');
+            }
             
             executionTimeMs = userRes.data.executionTimeMs || 0;
             
@@ -79,8 +130,9 @@ class ChallengeService {
                 isCorrect = true;
             }
             
-        } catch (error) {
+        } catch (submitError) {
             status = 'error';
+            error = submitError.message;
         }
 
         await challengeRepository.logSubmission(userId, challengeId, queryText, status, executionTimeMs);
@@ -98,7 +150,8 @@ class ChallengeService {
                 ? [{ name: 'Hidden Case 1', status: 'passed' }, { name: 'Hidden Case 2', status: 'passed' }]
                 : [{ name: 'Hidden Case 1', status: 'failed' }],
             xpEarned: isCorrect ? challenge.xp || 10 : 0,
-            executionTimeMs
+            executionTimeMs,
+            error
         };
     }
 
@@ -119,7 +172,7 @@ class ChallengeService {
     }
 
     async getRecommendedChallenges(userId, limit = 5) {
-        const challenges = await this.getChallenges();
+        const challenges = await this.getChallenges({}, userId);
         const weakTopics = await challengeRepository.getWeakTopics(userId);
         const weakTopicWeights = new Map(weakTopics.map(topic => [topic.topic, topic.weight]));
         const queue = new PriorityQueue(item => item.priority);
@@ -139,6 +192,18 @@ class ChallengeService {
         });
 
         return queue.toArray(Number(limit) || 5);
+    }
+
+    async toggleBookmark(userId, challengeId) {
+        return challengeRepository.toggleBookmark(userId, challengeId);
+    }
+
+    async getProfileStats(userId) {
+        return challengeRepository.getProfileStats(userId);
+    }
+
+    async globalSearch(query, userId) {
+        return challengeRepository.globalSearch(query, userId);
     }
 }
 

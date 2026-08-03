@@ -9,7 +9,7 @@ class QueryRepository {
 
         return {
             rows: isRowResult ? rows : [],
-            fields: fields || [],
+            fields: this.mapFields(fields || []),
             affectedRows: isRowResult ? 0 : rows.affectedRows ?? 0,
             insertId: isRowResult ? 0 : rows.insertId ?? 0,
             warningStatus: isRowResult ? 0 : rows.warningStatus ?? 0,
@@ -111,9 +111,7 @@ class QueryRepository {
 
     // Save query
     async saveQuery(userId, title, queryText, collection = 'Practice', notes = '') {
-        await appDb.query('ALTER TABLE saved_queries ADD COLUMN IF NOT EXISTS collection VARCHAR(50) DEFAULT "Practice"');
-        await appDb.query('ALTER TABLE saved_queries ADD COLUMN IF NOT EXISTS notes TEXT');
-        await appDb.query('ALTER TABLE saved_queries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+        await this.ensureSavedQuerySchema();
 
         const [result] = await appDb.query(
             'INSERT INTO saved_queries (user_id, title, query_text, collection, notes) VALUES (?, ?, ?, ?, ?)',
@@ -124,9 +122,7 @@ class QueryRepository {
 
     // Get saved queries
     async getSavedQueries(userId) {
-        await appDb.query('ALTER TABLE saved_queries ADD COLUMN IF NOT EXISTS collection VARCHAR(50) DEFAULT "Practice"');
-        await appDb.query('ALTER TABLE saved_queries ADD COLUMN IF NOT EXISTS notes TEXT');
-        await appDb.query('ALTER TABLE saved_queries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+        await this.ensureSavedQuerySchema();
 
         const [rows] = await appDb.query(
             'SELECT * FROM saved_queries WHERE user_id = ? ORDER BY created_at DESC',
@@ -136,6 +132,7 @@ class QueryRepository {
     }
 
     async updateSavedQuery(userId, id, data) {
+        await this.ensureSavedQuerySchema();
         await appDb.query(
             'UPDATE saved_queries SET title = ?, query_text = ?, collection = ?, notes = ? WHERE id = ? AND user_id = ?',
             [data.title, data.query, data.collection, data.notes || '', id, userId]
@@ -146,6 +143,37 @@ class QueryRepository {
     async deleteSavedQuery(userId, id) {
         await appDb.query('DELETE FROM saved_queries WHERE id = ? AND user_id = ?', [id, userId]);
         return { id };
+    }
+
+    async ensureSavedQuerySchema() {
+        await this.addColumnIfMissing('saved_queries', 'collection', 'VARCHAR(50) DEFAULT "Practice"');
+        await this.addColumnIfMissing('saved_queries', 'notes', 'TEXT');
+        await this.addColumnIfMissing('saved_queries', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+    }
+
+    async addColumnIfMissing(tableName, columnName, definition) {
+        const [rows] = await appDb.query(`
+            SELECT COUNT(*) AS column_count
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = ?
+              AND COLUMN_NAME = ?
+        `, [tableName, columnName]);
+
+        if (Number(rows[0]?.column_count || 0) === 0) {
+            await appDb.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
+        }
+    }
+
+    mapFields(fields) {
+        return fields.map(field => ({
+            name: field.name,
+            table: field.table,
+            type: field.type,
+            columnLength: field.columnLength,
+            flags: field.flags,
+            decimals: field.decimals
+        }));
     }
 }
 

@@ -7,13 +7,17 @@ INSERT IGNORE INTO department(id, department_name, location) VALUES
 (4, 'Sales', 'Pune'),
 (5, 'Operations', 'Hyderabad');
 
-INSERT IGNORE INTO employee(id, name, department, department_id, salary, hire_date) VALUES
-(1, 'Prince', 'IT', 1, 50000.00, '2022-01-10'),
-(2, 'Rahul', 'HR', 2, 45000.00, '2021-08-15'),
-(3, 'Aman', 'Finance', 3, 60000.00, '2020-04-20'),
-(4, 'Neha', 'IT', 1, 72000.00, '2019-11-01'),
-(5, 'Sana', 'Sales', 4, 52000.00, '2023-02-12'),
-(6, 'Kiran', 'Operations', 5, 48000.00, '2022-09-05');
+INSERT IGNORE INTO employee(id, name, department, department_id, manager_id, salary, hire_date) VALUES
+(1, 'Prince', 'IT', 1, NULL, 50000.00, '2022-01-10'),
+(2, 'Rahul', 'HR', 2, 1, 45000.00, '2021-08-15'),
+(3, 'Aman', 'Finance', 3, 1, 60000.00, '2020-04-20'),
+(4, 'Neha', 'IT', 1, 1, 72000.00, '2019-11-01'),
+(5, 'Sana', 'Sales', 4, 1, 52000.00, '2023-02-12'),
+(6, 'Kiran', 'Operations', 5, 1, 48000.00, '2022-09-05'),
+(7, 'Mehul', 'IT', 1, 4, 68000.00, '2020-07-12'),
+(8, 'Ira', 'IT', 1, 4, 63000.00, '2021-05-09'),
+(9, 'Devika', 'IT', 1, 4, 59000.00, '2022-12-20'),
+(10, 'Vikram', 'IT', 1, 4, 81000.00, '2018-03-30');
 
 INSERT IGNORE INTO salary(id, employee_id, amount, effective_date) VALUES
 (1, 1, 50000.00, '2024-01-01'),
@@ -23,11 +27,11 @@ INSERT IGNORE INTO salary(id, employee_id, amount, effective_date) VALUES
 (5, 5, 52000.00, '2024-01-01'),
 (6, 6, 48000.00, '2024-01-01');
 
-INSERT IGNORE INTO customers(id, name, email, city) VALUES
-(1, 'Arjun Mehta', 'arjun@example.com', 'Delhi'),
-(2, 'Meera Shah', 'meera@example.com', 'Mumbai'),
-(3, 'Ishaan Rao', 'ishaan@example.com', 'Bengaluru'),
-(4, 'Tara Singh', 'tara@example.com', 'Pune');
+INSERT IGNORE INTO customers(id, name, email, city, country, status) VALUES
+(1, 'Arjun Mehta', 'arjun@example.com', 'Delhi', 'India', 'active'),
+(2, 'Meera Shah', 'meera@example.com', 'Mumbai', 'India', 'active'),
+(3, 'Ishaan Rao', 'ishaan@example.com', 'Bengaluru', 'India', 'inactive'),
+(4, 'Tara Singh', 'tara@example.com', 'Pune', 'India', 'active');
 
 INSERT IGNORE INTO products(id, name, category, price) VALUES
 (1, 'Laptop', 'Electronics', 65000.00),
@@ -36,11 +40,40 @@ INSERT IGNORE INTO products(id, name, category, price) VALUES
 (4, 'Notebook', 'Stationery', 120.00),
 (5, 'Monitor', 'Electronics', 14000.00);
 
-INSERT IGNORE INTO orders(id, customer_id, order_date, total) VALUES
-(1, 1, '2024-02-01', 67200.00),
-(2, 2, '2024-02-03', 8500.00),
-(3, 3, '2024-02-08', 14120.00),
-(4, 1, '2024-02-15', 2200.00);
+INSERT IGNORE INTO orders(id, customer_id, order_date, total, total_amount) VALUES
+(1, 1, '2024-02-01', 67200.00, 67200.00),
+(2, 2, '2024-02-03', 8500.00, 8500.00),
+(3, 3, '2024-02-08', 14120.00, 14120.00),
+(4, 1, '2024-02-15', 2200.00, 2200.00),
+(5, 1, '2024-02-18', 1200.00, 1200.00),
+(6, 1, '2024-02-20', 499.00, 499.00),
+(7, 4, '2024-02-22', 1800.00, 1800.00);
+
+INSERT IGNORE INTO order_items(id, order_id, product_id, quantity, unit_price) VALUES
+(1, 1, 1, 1, 65000.00),
+(2, 1, 2, 1, 2200.00),
+(3, 2, 3, 1, 8500.00),
+(4, 3, 5, 1, 14000.00),
+(5, 3, 4, 1, 120.00),
+(6, 4, 2, 1, 2200.00),
+(7, 5, 4, 10, 120.00),
+(8, 7, 2, 1, 1800.00);
+
+INSERT IGNORE INTO suppliers(id, name, email, status) VALUES
+(1, 'Northwind Supplies', 'northwind@example.com', 'active'),
+(2, 'Metro Wholesale', 'metro@example.com', 'inactive'),
+(3, 'Acme Components', 'acme@example.com', 'active');
+
+INSERT IGNORE INTO categories(id, name, parent_id) VALUES
+(1, 'Catalog', NULL),
+(2, 'Electronics', 1),
+(3, 'Furniture', 1),
+(4, 'Accessories', 2);
+
+INSERT IGNORE INTO services(id, name, price) VALUES
+(1, 'Installation', 1200.00),
+(2, 'Warranty Extension', 2500.00),
+(3, 'Data Migration', 5000.00);
 
 INSERT IGNORE INTO inventory(id, product_id, quantity, warehouse) VALUES
 (1, 1, 12, 'North'),

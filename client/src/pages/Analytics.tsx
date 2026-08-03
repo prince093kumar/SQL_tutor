@@ -1,150 +1,188 @@
 import React from 'react';
+import { Activity, BarChart3, Flame, Search, Sparkles, Target, Trophy } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
+import api from '../utils/api';
+import { useAuthStore } from '../store/useAuthStore';
 
-const stats = [
-  { label: 'Queries Today', value: '152' },
-  { label: 'Saved Queries', value: '48' },
-  { label: 'Challenges Solved', value: '35' },
-  { label: 'Current Streak', value: '12 Days' },
-  { label: 'XP', value: '1200' },
-];
+type SearchResult = {
+  challenges: Array<{ id: number; title: string; difficulty: string; category: string; operation: string }>;
+  tables: Array<{ name: string; columns: string[] }>;
+  savedQueries: Array<{ id: number; title: string; collection?: string }>;
+  suggestions: Array<{ label: string; type: string }>;
+};
 
-const dailyActivity = [
-  { label: 'Mon', value: 22 },
+const emptySearch: SearchResult = { challenges: [], tables: [], savedQueries: [], suggestions: [] };
+
+const fallbackStats = {
+  solved: 42,
+  accuracy: 87,
+  ranking: 21,
+  streak: 18,
+  xp: 1240,
+  skills: [
+    { topic: 'SELECT', strength: 95 },
+    { topic: 'JOIN', strength: 78 },
+    { topic: 'CTE', strength: 40 },
+  ],
+  recentSubmissions: [
+    { challenge: 'JOIN Basics', status: 'Accepted', runtime: '21ms' },
+    { challenge: 'Average Salary', status: 'Accepted', runtime: '18ms' },
+  ],
+};
+
+const weeklyActivity = [
+  { label: 'Mon', value: 36 },
   { label: 'Tue', value: 72 },
-  { label: 'Wed', value: 88 },
-  { label: 'Thu', value: 36 },
+  { label: 'Wed', value: 54 },
+  { label: 'Thu', value: 88 },
   { label: 'Fri', value: 64 },
-  { label: 'Sat', value: 51 },
-  { label: 'Sun', value: 78 },
+  { label: 'Sat', value: 42 },
+  { label: 'Sun', value: 58 },
 ];
-const difficultyDistribution = [
-  { label: 'Easy', value: 75, color: 'bg-green-400' },
-  { label: 'Medium', value: 58, color: 'bg-yellow-300' },
-  { label: 'Hard', value: 22, color: 'bg-red-300' },
-];
-const queryTypes = [
-  { label: 'SELECT', value: 45 },
-  { label: 'JOIN', value: 20 },
-  { label: 'GROUP BY', value: 15 },
-  { label: 'INSERT', value: 10 },
-  { label: 'Others', value: 10 },
-];
-const mostUsedTables = [
-  { label: 'employee', value: 42 },
-  { label: 'orders', value: 37 },
-  { label: 'customers', value: 29 },
-];
-const recentQueries = ['Interview.sql', 'Practice.sql', 'Favorites.sql'];
-const recentChallenges = ['JOIN Basics', 'Average Salary', 'Salary Ranking'];
 
 export const Analytics: React.FC = () => {
+  const user = useAuthStore(state => state.user);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [searchResults, setSearchResults] = React.useState<SearchResult>(emptySearch);
+  const [stats, setStats] = React.useState(fallbackStats);
+  const [recommended, setRecommended] = React.useState<any[]>([]);
+  const [recentQueries, setRecentQueries] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    api.get('/challenges/profile-stats').then(({ data }) => setStats({ ...fallbackStats, ...data.data })).catch(() => setStats(fallbackStats));
+    api.get('/challenges/recommended', { params: { limit: 3 } }).then(({ data }) => setRecommended(data.data || [])).catch(() => setRecommended([]));
+    api.get('/sql/history').then(({ data }) => setRecentQueries(data.data || [])).catch(() => setRecentQueries([]));
+  }, []);
+
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (!searchTerm.trim()) {
+        setSearchResults(emptySearch);
+        return;
+      }
+
+      api.get('/search', { params: { q: searchTerm.trim() } })
+        .then(({ data }) => setSearchResults(data))
+        .catch(() => setSearchResults(emptySearch));
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [searchTerm]);
+
+  const displayName = user?.username || 'Prince';
+  const metrics = [
+    { label: 'Solved', value: `${stats.solved} / 60`, icon: Target, accent: 'from-emerald-400 to-green-500' },
+    { label: 'Queries', value: recentQueries.length || 284, icon: BarChart3, accent: 'from-sky-400 to-blue-500' },
+    { label: 'Accuracy', value: `${stats.accuracy}%`, icon: Activity, accent: 'from-violet-400 to-fuchsia-500' },
+    { label: 'Ranking', value: `#${stats.ranking}`, icon: Trophy, accent: 'from-cyan-300 to-teal-400' },
+    { label: 'Streak', value: `${stats.streak} days`, icon: Flame, accent: 'from-amber-300 to-orange-500' },
+  ];
+
   return (
-    <div className="flex h-screen bg-vscode-bg text-vscode-text">
+    <div className="app-shell flex h-screen text-vscode-text">
       <Sidebar />
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-7xl">
-          <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
-          <p className="mt-1 text-sm text-vscode-text/65">Query activity, saved work, challenge progress, and learning momentum.</p>
-
-          <div className="mt-6 grid grid-cols-5 gap-4">
-            {stats.map(stat => (
-              <div key={stat.label} className="rounded border border-vscode-border bg-vscode-sidebar p-4">
-                <div className="text-xs uppercase tracking-wide text-vscode-text/55">{stat.label}</div>
-                <div className="mt-3 text-2xl font-semibold text-white">{stat.value}</div>
+          <section className="flex items-start justify-between gap-6 border-b border-vscode-border pb-5">
+            <div>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-md border border-vscode-accent/30 bg-vscode-accent/10 px-2.5 py-1 text-xs text-sky-200">
+                <Sparkles size={13} /> Learning dashboard
               </div>
-            ))}
+              <h1 className="text-2xl font-semibold text-white">Good afternoon, {displayName}</h1>
+              <p className="mt-1 text-sm text-vscode-text/65">Track practice, review weak spots, and jump back into SQL challenges.</p>
+            </div>
+            <div className="relative w-[420px]">
+              <Search size={16} className="absolute left-3 top-3 text-vscode-text/50" />
+              <input value={searchTerm} onChange={event => setSearchTerm(event.target.value)} placeholder="Search SQLLab" className="w-full rounded-md border border-vscode-border bg-[#06101a] py-2.5 pl-9 pr-3 text-sm shadow-inner shadow-black/30 outline-none focus:border-vscode-accent" />
+              {searchTerm.trim() && (
+                <div className="workbench-panel absolute right-0 top-12 z-20 w-full p-4">
+                  <SearchGroup title="Suggestions" items={searchResults.suggestions.map(item => item.label)} />
+                  <SearchGroup title="Challenges" items={searchResults.challenges.map(item => `${item.title} - ${item.operation}`)} />
+                  <SearchGroup title="Tables" items={searchResults.tables.map(item => `${item.name}${item.columns.length ? ` - ${item.columns.join(', ')}` : ''}`)} />
+                  <SearchGroup title="Saved Queries" items={searchResults.savedQueries.map(item => item.title)} />
+                </div>
+              )}
+            </div>
+          </section>
+
+          <div className="mt-5 grid grid-cols-5 gap-4">
+            {metrics.map(metric => {
+              const Icon = metric.icon;
+              return (
+                <section key={metric.label} className="metric-card">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs uppercase tracking-wide text-vscode-text/55">{metric.label}</div>
+                    <div className={`rounded-md bg-gradient-to-br ${metric.accent} p-1.5 text-white`}>
+                      <Icon size={14} />
+                    </div>
+                  </div>
+                  <div className="mt-3 text-2xl font-semibold text-white">{metric.value}</div>
+                </section>
+              );
+            })}
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-4">
-            <section className="rounded border border-vscode-border bg-[#202020] p-5">
-              <h2 className="font-semibold text-white">Query Activity</h2>
+          <div className="mt-5 grid grid-cols-2 gap-5">
+            <section className="workbench-panel p-5">
+              <h2 className="font-semibold text-white">Continue Learning</h2>
+              <div className="mt-4">
+                <div className="mb-2 flex justify-between text-sm"><span>JOIN Basics</span><span>72%</span></div>
+                <div className="h-3 rounded-full bg-[#142131]"><div className="h-3 rounded-full bg-gradient-to-r from-blue-400 to-cyan-300" style={{ width: '72%' }} /></div>
+              </div>
+            </section>
+
+            <section className="workbench-panel p-5">
+              <h2 className="font-semibold text-white">Recommended for You</h2>
+              <div className="mt-4 space-y-3">
+                {(recommended.length ? recommended : [{ title: 'Window Functions', difficulty: 'medium', reason: 'Based on your progress' }]).map(item => (
+                  <div key={item.id || item.title} className="rounded-md border border-vscode-border bg-white/[0.03] p-3 text-sm transition hover:border-vscode-accent/60 hover:bg-vscode-accent/10">
+                    <div className="font-semibold text-white">{item.title}</div>
+                    <div className="mt-1 flex gap-3 text-xs text-vscode-text/65"><span>{item.difficulty}</span><span>{item.reason || 'Based on your progress'}</span></div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="workbench-panel p-5">
+              <h2 className="font-semibold text-white">Weekly Activity</h2>
               <div className="mt-6 flex h-52 items-end gap-4">
-                {dailyActivity.map(item => (
+                {weeklyActivity.map(item => (
                   <div key={item.label} className="flex flex-1 flex-col items-center gap-2">
-                    <div className="w-full rounded-t bg-vscode-accent" style={{ height: `${item.value}%` }} />
+                    <div className="w-full rounded-t bg-gradient-to-t from-vscode-accent to-cyan-300 shadow-[0_0_18px_rgba(47,140,255,0.22)]" style={{ height: `${item.value}%` }} />
                     <span className="text-xs text-vscode-text/55">{item.label}</span>
                   </div>
                 ))}
               </div>
             </section>
 
-            <section className="rounded border border-vscode-border bg-[#202020] p-5">
-              <h2 className="font-semibold text-white">Most Used Tables</h2>
-              <div className="mt-6 space-y-5">
-                {mostUsedTables.map(item => (
-                  <div key={item.label}>
-                    <div className="mb-2 flex justify-between text-sm">
-                      <span>{item.label}</span>
-                      <span>{item.value}</span>
-                    </div>
-                    <div className="h-3 rounded bg-vscode-bg">
-                      <div className="h-3 rounded bg-purple-400" style={{ width: `${item.value * 2}%` }} />
-                    </div>
+            <section className="workbench-panel p-5">
+              <h2 className="font-semibold text-white">SQL Skills</h2>
+              <div className="mt-5 space-y-4">
+                {stats.skills.slice(0, 6).map(skill => (
+                  <div key={skill.topic}>
+                    <div className="mb-1 flex justify-between text-sm"><span>{skill.topic}</span><span>{skill.strength}%</span></div>
+                    <div className="h-2 rounded-full bg-[#142131]"><div className="h-2 rounded-full bg-gradient-to-r from-emerald-400 to-teal-300" style={{ width: `${skill.strength}%` }} /></div>
                   </div>
                 ))}
               </div>
             </section>
 
-            <section className="rounded border border-vscode-border bg-[#202020] p-5">
-              <h2 className="font-semibold text-white">Difficulty Distribution</h2>
-              <div className="mt-6 space-y-5">
-                {difficultyDistribution.map(item => (
-                  <div key={item.label}>
-                    <div className="mb-2 flex justify-between text-sm">
-                      <span>{item.label}</span>
-                      <span>{item.value}%</span>
-                    </div>
-                    <div className="h-3 rounded bg-vscode-bg">
-                      <div className={`h-3 rounded ${item.color}`} style={{ width: `${item.value}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded border border-vscode-border bg-[#202020] p-5">
-              <h2 className="font-semibold text-white">Recent Challenges</h2>
-              <div className="mt-4 space-y-3">
-                {recentChallenges.map((item, index) => (
-                  <div key={item} className="flex items-center justify-between rounded border border-vscode-border bg-vscode-bg p-3 text-sm">
-                    <span>{item}</span>
-                    <span className={index === 0 ? 'text-yellow-300' : index === 1 ? 'text-green-300' : 'text-red-300'}>{index === 0 ? 'Medium' : index === 1 ? 'Easy' : 'Hard'}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded border border-vscode-border bg-[#202020] p-5">
+            <section className="workbench-panel p-5">
               <h2 className="font-semibold text-white">Recent Queries</h2>
               <div className="mt-4 space-y-2">
-                {recentQueries.map(item => <div key={item} className="rounded border border-vscode-border bg-vscode-bg p-3 text-sm">{item}</div>)}
+                {(recentQueries.length ? recentQueries.slice(0, 5) : [{ id: 1, query_text: 'SELECT * FROM employee;' }, { id: 2, query_text: 'SELECT name FROM customers;' }]).map(item => (
+                  <div key={item.id} className="truncate rounded-md border border-vscode-border bg-white/[0.03] p-3 text-sm hover:border-vscode-accent/50">{item.query_text}</div>
+                ))}
               </div>
             </section>
 
-            <section className="rounded border border-vscode-border bg-[#202020] p-5">
-              <h2 className="font-semibold text-white">Continue Learning</h2>
-              <div className="mt-4">
-                <div className="mb-2 flex justify-between text-sm"><span>JOIN Basics</span><span>72%</span></div>
-                <div className="h-3 rounded bg-vscode-bg"><div className="h-3 rounded bg-vscode-accent" style={{ width: '72%' }} /></div>
-                <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
-                  <div><div className="text-xs text-vscode-text/50">XP</div><div className="text-white">1200</div></div>
-                  <div><div className="text-xs text-vscode-text/50">Ranking</div><div className="text-white">21</div></div>
-                  <div><div className="text-xs text-vscode-text/50">Streak</div><div className="text-white">18 Days</div></div>
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded border border-vscode-border bg-[#202020] p-5 col-span-2">
-              <h2 className="font-semibold text-white">Query Types</h2>
-              <div className="mt-5 grid grid-cols-5 gap-4">
-                {queryTypes.map(item => (
-                  <div key={item.label} className="rounded border border-vscode-border bg-vscode-bg p-4">
-                    <div className="mb-3 text-sm text-white">{item.label}</div>
-                    <div className="h-2 rounded bg-vscode-sidebar">
-                      <div className="h-2 rounded bg-purple-400" style={{ width: `${item.value}%` }} />
-                    </div>
-                    <div className="mt-2 text-xs text-vscode-text/55">{item.value}%</div>
+            <section className="workbench-panel p-5">
+              <h2 className="font-semibold text-white">Recent Submissions</h2>
+              <div className="mt-4 space-y-2">
+                {stats.recentSubmissions.slice(0, 5).map(item => (
+                  <div key={`${item.challenge}-${item.runtime}`} className="flex justify-between gap-4 rounded-md border border-vscode-border bg-white/[0.03] p-3 text-sm hover:border-vscode-accent/50">
+                    <span className="truncate text-white">{item.challenge}</span>
+                    <span className={item.status === 'Accepted' ? 'text-green-400' : 'text-red-300'}>{item.status}</span>
                   </div>
                 ))}
               </div>
@@ -155,3 +193,10 @@ export const Analytics: React.FC = () => {
     </div>
   );
 };
+
+const SearchGroup = ({ title, items }: { title: string; items: string[] }) => (
+  <div className="mb-4 last:mb-0">
+    <div className="mb-2 border-b border-vscode-border pb-1 text-xs font-semibold uppercase text-vscode-text/55">{title}</div>
+    {items.length ? items.slice(0, 5).map(item => <div key={item} className="rounded px-2 py-1 text-sm text-vscode-text/85 hover:bg-white/[0.04]">{item}</div>) : <div className="py-1 text-xs text-vscode-text/45">No matches</div>}
+  </div>
+);
