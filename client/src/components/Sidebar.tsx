@@ -46,7 +46,7 @@ const fallbackObjects = {
 export const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { history, savedQueries, setCurrentQuery, setHistory, setSavedQueries } = useSqlStore();
+  const { history, savedQueries, setCurrentQuery, setHistory, setSavedQueries, selectedDatabase } = useSqlStore();
   const [activeTab, setActiveTab] = React.useState<'playground' | 'history' | 'saved'>('playground');
   const [schema, setSchema] = React.useState<DatabaseSchema | null>(null);
   const [selectedTable, setSelectedTable] = React.useState<string>('');
@@ -74,7 +74,7 @@ export const Sidebar: React.FC = () => {
   const fetchSchema = async () => {
     try {
       setSchemaError('');
-      const { data } = await api.get('/sql/schema');
+      const { data } = await api.get(`/sql/schema?db=${selectedDatabase}`);
       setSchema(data);
       setSelectedTable(current => data.tables?.some((table: SchemaTable) => table.name === current) ? current : data.tables?.[0]?.name || '');
     } catch (error: any) {
@@ -103,9 +103,9 @@ export const Sidebar: React.FC = () => {
       fetchSchema();
       fetchSaved();
     }
-  }, [activeTab]);
+  }, [activeTab, selectedDatabase]);
 
-  const currentTable = schema?.tables.find(table => table.name === selectedTable);
+  const currentTable = schema?.tables?.find(table => table.name === selectedTable);
 
   return (
     <div className="flex h-full w-64 flex-col overflow-hidden border-r border-vscode-border bg-[#091421]/95 text-sm">

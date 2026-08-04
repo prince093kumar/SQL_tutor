@@ -3,7 +3,7 @@ import sqlService from '../services/sqlService.js';
 class SqlController {
     async execute(req, res) {
         try {
-            const { query } = req.body;
+            const { query, database } = req.body;
             const userId = req.headers['x-user-id']; // Provided by Gateway
 
             if (!query) {
@@ -17,7 +17,7 @@ class SqlController {
                 });
             }
 
-            const data = await sqlService.executeQuery(userId, query);
+            const data = await sqlService.executeQuery(userId, query, database);
             if (!data.success) {
                 return res.status(400).json(data);
             }
@@ -111,7 +111,7 @@ class SqlController {
 
     async getSchema(req, res) {
         try {
-            const data = await sqlService.getSchema();
+            const data = await sqlService.getSchema(req.query.db);
             res.json(data);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -120,7 +120,7 @@ class SqlController {
 
     async getSchemaGraph(req, res) {
         try {
-            const data = await sqlService.getSchemaGraph(req.query.startTable);
+            const data = await sqlService.getSchemaGraph(req.query.startTable, req.query.db);
             res.json(data);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -129,15 +129,24 @@ class SqlController {
 
     async analyze(req, res) {
         try {
-            const { query } = req.body;
+            const { query, database } = req.body;
             if (!query) {
                 return res.status(400).json({ error: 'SQL query is required.' });
             }
 
-            const data = await sqlService.analyzeQuery(query);
+            const data = await sqlService.analyzeQuery(query, database);
             if (data.error) {
                 return res.status(400).json(data);
             }
+            res.json({ data });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getDatabases(req, res) {
+        try {
+            const data = await sqlService.getDatabases();
             res.json({ data });
         } catch (error) {
             res.status(500).json({ error: error.message });

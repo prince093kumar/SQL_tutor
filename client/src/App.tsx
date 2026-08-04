@@ -8,6 +8,7 @@ import { SavedQueries } from './pages/SavedQueries';
 import { Profile } from './pages/Profile';
 import { useAuthStore } from './store/useAuthStore';
 import { ToastContainer } from './components/common/ToastContainer';
+import { useIdleTimeout } from './hooks/useIdleTimeout';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -21,6 +22,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
+  // Initialize 5-minute idle timeout
+  useIdleTimeout(5);
+
   return (
     <>
       <BrowserRouter>

@@ -2,49 +2,53 @@ import { appDb, practiceDb } from '../config/db.js';
 import { resetPracticeDatabase } from '../../database/init.js';
 
 class QueryRepository {
-    // Execute raw SQL on the practice database
-    async executeQuery(sql) {
-        const [rows, fields] = await practiceDb.query(sql);
-        const isRowResult = Array.isArray(rows);
-
-        return {
-            rows: isRowResult ? rows : [],
-            fields: this.mapFields(fields || []),
-            affectedRows: isRowResult ? 0 : rows.affectedRows ?? 0,
-            insertId: isRowResult ? 0 : rows.insertId ?? 0,
-            warningStatus: isRowResult ? 0 : rows.warningStatus ?? 0,
-            raw: rows
-        };
-    }
-
-    // Get execution plan
-    async getExplainPlan(sql) {
+    async executeQuery(sql, databaseName = 'practice_db') {
+        const connection = await practiceDb.getConnection();
         try {
-            // MySQL 8 supports EXPLAIN FORMAT=JSON
-            const [rows] = await practiceDb.query(`EXPLAIN FORMAT=JSON ${sql}`);
-            return rows;
-        } catch (error) {
-            throw error; // Will be caught by service
+            await connection.changeUser({ database: databaseName });
+            const [rows, fields] = await connection.query(sql);
+            const isRowResult = Array.isArray(rows);
+
+            return {
+                rows: isRowResult ? rows : [],
+                fields: this.mapFields(fields || []),
+                affectedRows: isRowResult ? 0 : rows.affectedRows ?? 0,
+                insertId: isRowResult ? 0 : rows.insertId ?? 0,
+                warningStatus: isRowResult ? 0 : rows.warningStatus ?? 0,
+                raw: rows
+            };
+        } finally {
+            connection.release();
         }
     }
 
-    // Get schema info for ER Diagram
-    async getSchema() {
-        const [databaseRows] = await practiceDb.query('SELECT DATABASE() AS databaseName');
-        const database = databaseRows[0]?.databaseName || process.env.DB_PRACTICE_NAME || 'practice_db';
+    async getExplainPlan(sql, databaseName = 'practice_db') {
+        const connection = await practiceDb.getConnection();
+        try {
+            await connection.changeUser({ database: databaseName });
+            // MySQL 8 supports EXPLAIN FORMAT=JSON
+            const [rows] = await connection.query(`EXPLAIN FORMAT=JSON ${sql}`);
+            return rows;
+        } finally {
+            connection.release();
+        }
+    }
 
+    async getSchema(databaseName = 'practice_db') {
         const [columns] = await practiceDb.query(`
             SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_KEY
             FROM information_schema.COLUMNS 
-            WHERE TABLE_SCHEMA = DATABASE()
+            WHERE TABLE_SCHEMA = ?
             ORDER BY TABLE_NAME, ORDINAL_POSITION
-        `);
+        `, [databaseName]);
+        
         const [views] = await practiceDb.query(`
             SELECT TABLE_NAME
             FROM information_schema.VIEWS
-            WHERE TABLE_SCHEMA = DATABASE()
+            WHERE TABLE_SCHEMA = ?
             ORDER BY TABLE_NAME
-        `);
+        `, [databaseName]);
+        
         const [relationships] = await practiceDb.query(`
             SELECT
                 TABLE_NAME,
@@ -52,10 +56,10 @@ class QueryRepository {
                 REFERENCED_TABLE_NAME,
                 REFERENCED_COLUMN_NAME
             FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
+            WHERE TABLE_SCHEMA = ?
                 AND REFERENCED_TABLE_NAME IS NOT NULL
             ORDER BY TABLE_NAME, COLUMN_NAME
-        `);
+        `, [databaseName]);
 
         const tables = columns.reduce((acc, column) => {
             let table = acc.find(item => item.name === column.TABLE_NAME);
@@ -74,7 +78,7 @@ class QueryRepository {
         }, []);
 
         return {
-            database,
+            database: databaseName,
             tables,
             views: views.map(view => view.TABLE_NAME),
             relationships: relationships.map(relationship => ({
@@ -88,7 +92,17 @@ class QueryRepository {
 
     async resetPracticeDatabase() {
         await resetPracticeDatabase();
-        return this.getSchema();
+        return this.getSchema('practice_db');
+    }
+
+    async getDatabases() {
+        const [rows] = await practiceDb.query(`
+            SELECT SCHEMA_NAME 
+            FROM information_schema.SCHEMATA
+            WHERE SCHEMA_NAME NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys', 'auth_db', 'sql_db', 'challenge_db', 'analytics_db')
+            ORDER BY SCHEMA_NAME
+        `);
+        return rows.map(r => r.SCHEMA_NAME);
     }
 
     // Save history

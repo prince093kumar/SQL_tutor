@@ -25,6 +25,7 @@ router.put('/saved/:id', sqlController.updateSaved.bind(sqlController));
 router.delete('/saved/:id', sqlController.deleteSaved.bind(sqlController));
 router.get('/autocomplete', sqlController.getAutocomplete.bind(sqlController));
 router.get('/schema', sqlController.getSchema.bind(sqlController));
+router.get('/databases', sqlController.getDatabases.bind(sqlController));
 router.get('/schema/graph', sqlController.getSchemaGraph.bind(sqlController));
 router.post('/analyze', sqlController.analyze.bind(sqlController));
 router.post('/reset', sqlController.reset.bind(sqlController));

@@ -14,10 +14,12 @@ export const Editor: React.FC = () => {
     setIsExecuting, 
     isExecuting,
     setActiveTab,
-    removeTab 
+    removeTab,
+    selectedDatabase,
+    setSelectedDatabase
   } = useSqlStore();
   
-  const [schema, setSchema] = React.useState('practice_db');
+  const [databases, setDatabases] = React.useState<string[]>(['practice_db']);
   const [limit, setLimit] = React.useState('100');
   const [executionMode, setExecutionMode] = React.useState('Auto Commit');
 
@@ -39,12 +41,26 @@ export const Editor: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentQuery, activeTabId]);
 
+  useEffect(() => {
+    const fetchDatabases = async () => {
+      try {
+        const { data } = await api.get('/sql/databases');
+        if (data.data) {
+          setDatabases(data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch databases:', error);
+      }
+    };
+    fetchDatabases();
+  }, []);
+
   const handleExecute = async () => {
     if (!currentQuery.trim()) return;
     setIsExecuting(true);
     setQueryResult(null);
     try {
-      const { data } = await api.post('/sql/execute', { query: currentQuery });
+      const { data } = await api.post('/sql/execute', { query: currentQuery, database: selectedDatabase });
       setQueryResult(data);
     } catch (error: any) {
       const responseData = error.response?.data;
@@ -153,8 +169,8 @@ export const Editor: React.FC = () => {
       <div className="flex items-center gap-6 border-b border-vscode-border bg-[#091421] px-3 py-2 text-xs shadow-sm">
         <label className="flex items-center gap-2 text-vscode-text/70 font-medium">
           Current Schema
-          <select value={schema} onChange={e => setSchema(e.target.value)} className="rounded-md border border-vscode-border bg-[#071019] px-2 py-1 text-white outline-none focus:border-vscode-accent hover:border-vscode-accent/50 cursor-pointer transition-colors">
-            <option>practice_db</option>
+          <select value={selectedDatabase} onChange={e => setSelectedDatabase(e.target.value)} className="rounded-md border border-vscode-border bg-[#071019] px-2 py-1 text-white outline-none focus:border-vscode-accent hover:border-vscode-accent/50 cursor-pointer transition-colors">
+            {databases.map(db => <option key={db} value={db}>{db}</option>)}
           </select>
         </label>
         <label className="flex items-center gap-2 text-vscode-text/70 font-medium">

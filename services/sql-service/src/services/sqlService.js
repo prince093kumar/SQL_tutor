@@ -94,7 +94,7 @@ class SqlService {
         };
     }
 
-    async executeQuery(userId, sql) {
+    async executeQuery(userId, sql, databaseName = 'practice_db') {
         const startTime = Date.now();
         let status = 'success';
         
@@ -102,13 +102,19 @@ class SqlService {
         const queryText = sql.trim();
         
         try {
-            // Prevent dangerous queries (for MVP)
             const upperQuery = queryText.toUpperCase();
-            if (upperQuery.includes('DROP DATABASE') || upperQuery.includes('ALTER USER')) {
-                throw new Error('Query not allowed');
+            
+            // Protect system databases
+            const systemDbs = ['AUTH_DB', 'SQL_DB', 'CHALLENGE_DB', 'ANALYTICS_DB', 'MYSQL', 'INFORMATION_SCHEMA', 'PERFORMANCE_SCHEMA', 'SYS'];
+            
+            // Very basic heuristic to catch attempts to modify system databases
+            const isTargetingSystem = systemDbs.some(db => upperQuery.includes(db) && (upperQuery.includes('DROP DATABASE') || upperQuery.includes('ALTER DATABASE') || upperQuery.includes('DROP TABLE') || upperQuery.includes('ALTER TABLE') || upperQuery.includes('CREATE TABLE') || upperQuery.includes('INSERT ') || upperQuery.includes('UPDATE ') || upperQuery.includes('DELETE ')));
+            
+            if (isTargetingSystem || upperQuery.includes('ALTER USER') || upperQuery.includes('GRANT ') || upperQuery.includes('REVOKE ')) {
+                throw new Error('Operation not allowed on system databases or users.');
             }
 
-            const cacheKey = `${userId || 'anonymous'}:${queryText}`;
+            const cacheKey = `${userId || 'anonymous'}:${databaseName}:${queryText}`;
             if (this._isCacheableReadQuery(queryText)) {
                 const cachedResult = this.readOnlyQueryCache.get(cacheKey);
                 if (cachedResult) {
@@ -128,7 +134,7 @@ class SqlService {
                 }
             }
 
-            const result = await queryRepository.executeQuery(queryText);
+            const result = await queryRepository.executeQuery(queryText, databaseName);
             const executionTime = Date.now() - startTime;
             const rowCount = Array.isArray(result.rows) && result.rows.length > 0
                 ? result.rows.length
@@ -183,17 +189,21 @@ class SqlService {
         return queryRepository.getHistory(userId);
     }
 
-    async getSchema() {
-        const cachedSchema = this.schemaCache.get('practice_db');
+    async getSchema(databaseName = 'practice_db') {
+        const cachedSchema = this.schemaCache.get(databaseName);
         if (cachedSchema) return { ...cachedSchema, cache: { hit: true, strategy: 'LRU' } };
 
-        const schema = await queryRepository.getSchema();
-        this.schemaCache.put('practice_db', schema);
+        const schema = await queryRepository.getSchema(databaseName);
+        this.schemaCache.put(databaseName, schema);
         return schema;
     }
 
-    async getSchemaGraph(startTable) {
-        const schema = await this.getSchema();
+    async getDatabases() {
+        return await queryRepository.getDatabases();
+    }
+
+    async getSchemaGraph(startTable, databaseName = 'practice_db') {
+        const schema = await this.getSchema(databaseName);
         const graph = new SchemaGraph();
 
         schema.tables.forEach(table => graph.addTable(table.name));
@@ -230,14 +240,14 @@ class SqlService {
         return normalized.startsWith('SELECT') && !/\b(NOW|RAND|UUID|CURRENT_TIMESTAMP)\s*\(/.test(normalized);
     }
 
-    async analyzeQuery(sql) {
+    async analyzeQuery(sql, databaseName = 'practice_db') {
         try {
             // Only SELECT queries are safe for EXPLAIN
             if (!sql.trim().toUpperCase().startsWith('SELECT')) {
                 return { error: 'Analysis is only available for SELECT queries.' };
             }
 
-            const explainRows = await queryRepository.getExplainPlan(sql);
+            const explainRows = await queryRepository.getExplainPlan(sql, databaseName);
             if (!explainRows || explainRows.length === 0) return { error: 'No execution plan generated' };
             
             const rawPlan = explainRows[0].EXPLAIN;

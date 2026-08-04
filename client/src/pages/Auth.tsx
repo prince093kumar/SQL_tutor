@@ -13,9 +13,35 @@ export const Auth: React.FC = () => {
   const navigate = useNavigate();
   const login = useAuthStore(state => state.login);
 
+  const validateForm = () => {
+    if (!isLogin) {
+      const usernameRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/;
+      if (!usernameRegex.test(formData.username)) {
+        setError('Username must be a combination of letters and numbers.');
+        return false;
+      }
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address.');
+      return false;
+    }
+
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!validateForm()) return;
+
     setLoading(true);
 
     try {

@@ -16,6 +16,7 @@ interface SqlState {
   history: any[];
   savedQueries: any[];
   isExecuting: boolean;
+  selectedDatabase: string;
   
   // Keep for backwards compatibility during refactor, maps to active tab query
   currentQuery: string; 
@@ -25,6 +26,7 @@ interface SqlState {
   setHistory: (history: any[]) => void;
   setSavedQueries: (queries: any[]) => void;
   setIsExecuting: (isExecuting: boolean) => void;
+  setSelectedDatabase: (db: string) => void;
   resetEditor: (query?: string) => void;
 
   // Tab management
@@ -58,6 +60,7 @@ export const useSqlStore = create<SqlState>((set, get) => {
     history: [],
     savedQueries: [],
     isExecuting: false,
+    selectedDatabase: 'practice_db',
     
     setCurrentQuery: (query) => set((state) => {
       const updatedTabs = state.tabs.map(tab => 
@@ -75,6 +78,7 @@ export const useSqlStore = create<SqlState>((set, get) => {
     setHistory: (history) => set({ history }),
     setSavedQueries: (savedQueries) => set({ savedQueries }),
     setIsExecuting: (isExecuting) => set({ isExecuting }),
+    setSelectedDatabase: (selectedDatabase) => set({ selectedDatabase }),
     
     resetEditor: (query = DEFAULT_QUERY) => set((state) => {
       // Just resets the current tab's query and clears results
