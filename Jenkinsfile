@@ -200,6 +200,7 @@ pipeline {
                     )
                 ]) {
                     bat '''
+                        for /f "delims=" %%i in ('whoami') do icacls "%EC2_KEY%" /inheritance:r /grant:r "%%i":"(R)"
                         ssh -o StrictHostKeyChecking=no ^
                         -i "%EC2_KEY%" ^
                         %SSH_USER%@%EC2_HOST% ^
@@ -225,6 +226,7 @@ pipeline {
                 ]) {
 
                     bat '''
+                        for /f "delims=" %%i in ('whoami') do icacls "%EC2_KEY%" /inheritance:r /grant:r "%%i":"(R)"
                         ssh -o StrictHostKeyChecking=no ^
                         -i "%EC2_KEY%" ^
                         %SSH_USER%@%EC2_HOST% ^
@@ -265,6 +267,7 @@ pipeline {
                 ]) {
 
                     bat '''
+                        for /f "delims=" %%i in ('whoami') do icacls "%EC2_KEY%" /inheritance:r /grant:r "%%i":"(R)"
                         ssh -o StrictHostKeyChecking=no ^
                         -i "%EC2_KEY%" ^
                         %SSH_USER%@%EC2_HOST% ^
@@ -290,6 +293,7 @@ pipeline {
                 ]) {
 
                     bat '''
+                        for /f "delims=" %%i in ('whoami') do icacls "%EC2_KEY%" /inheritance:r /grant:r "%%i":"(R)"
                         ssh -o StrictHostKeyChecking=no ^
                         -i "%EC2_KEY%" ^
                         %SSH_USER%@%EC2_HOST% ^
