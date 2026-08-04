@@ -13,7 +13,28 @@ type SearchResult = {
 
 const emptySearch: SearchResult = { challenges: [], tables: [], savedQueries: [], suggestions: [] };
 
-const fallbackStats = {
+interface Skill {
+  topic: string;
+  strength: number;
+}
+
+interface Submission {
+  challenge: string;
+  runtime: number;
+  status: string;
+}
+
+interface Stats {
+  solved: number;
+  accuracy: number;
+  ranking: number;
+  streak: number;
+  xp: number;
+  skills: Skill[];
+  recentSubmissions: Submission[];
+}
+
+const fallbackStats: Stats = {
   solved: 0,
   accuracy: 0,
   ranking: 0,

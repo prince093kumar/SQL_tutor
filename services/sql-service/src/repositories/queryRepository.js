@@ -2,11 +2,64 @@ import { appDb, practiceDb } from '../config/db.js';
 import { resetPracticeDatabase } from '../../database/init.js';
 
 class QueryRepository {
-    async executeQuery(sql, databaseName = 'practice_db') {
+    constructor() {
+        this.provisionedUsers = new Set();
+    }
+
+    async ensureUserDbPermissions(userId) {
+        if (!userId || this.provisionedUsers.has(userId)) return;
+        
+        const username = `u_${userId}`;
+        // Create user if not exists
+        const [rows] = await appDb.query(`SELECT User FROM mysql.user WHERE User = ?`, [username]);
+        if (rows.length === 0) {
+            await appDb.query(`CREATE USER '${username}'@'%' IDENTIFIED BY 'sandbox'`);
+            await appDb.query(`GRANT SELECT, SHOW VIEW ON practice_db.* TO '${username}'@'%'`);
+            await appDb.query(`GRANT ALL PRIVILEGES ON \`user\\_${userId}\\__%\`.* TO '${username}'@'%'`);
+            await appDb.query(`FLUSH PRIVILEGES`);
+        }
+        this.provisionedUsers.add(userId);
+    }
+
+    rewriteDatabaseDDL(sql, userId) {
+        let finalSql = sql;
+        const createDbMatch = finalSql.match(/^\s*CREATE\s+DATABASE\s+(IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_]+)/i);
+        if (createDbMatch) {
+            const dbName = createDbMatch[2];
+            const isolatedDbName = `user_${userId}_${dbName}`;
+            finalSql = finalSql.replace(new RegExp(`\\b${dbName}\\b`, 'g'), isolatedDbName); 
+        }
+
+        const dropDbMatch = finalSql.match(/^\s*DROP\s+DATABASE\s+(IF\s+EXISTS\s+)?([a-zA-Z0-9_]+)/i);
+        if (dropDbMatch) {
+            const dbName = dropDbMatch[2];
+            const isolatedDbName = `user_${userId}_${dbName}`;
+            finalSql = finalSql.replace(new RegExp(`\\b${dbName}\\b`, 'g'), isolatedDbName);
+        }
+        return finalSql;
+    }
+
+    async executeQuery(sql, databaseName = 'practice_db', userId = null) {
+        let targetDb = databaseName;
+        if (userId && targetDb !== 'practice_db' && !targetDb.startsWith(`user_${userId}_`)) {
+            targetDb = `user_${userId}_${targetDb}`;
+        }
+        
+        let querySql = sql;
+        if (userId) {
+            await this.ensureUserDbPermissions(userId);
+            querySql = this.rewriteDatabaseDDL(sql, userId);
+        }
+
         const connection = await practiceDb.getConnection();
         try {
-            await connection.changeUser({ database: databaseName });
-            const [rows, fields] = await connection.query(sql);
+            if (userId) {
+                await connection.changeUser({ user: `u_${userId}`, password: 'sandbox', database: targetDb });
+            } else {
+                await connection.changeUser({ database: targetDb });
+            }
+            
+            const [rows, fields] = await connection.query(querySql);
             const isRowResult = Array.isArray(rows);
 
             return {
@@ -18,36 +71,63 @@ class QueryRepository {
                 raw: rows
             };
         } finally {
+            if (userId) {
+                // Revert to root user for the pool
+                await connection.changeUser({ user: process.env.DB_USER || 'root', password: process.env.DB_PASSWORD || 'root', database: 'practice_db' });
+            }
             connection.release();
         }
     }
 
-    async getExplainPlan(sql, databaseName = 'practice_db') {
+    async getExplainPlan(sql, databaseName = 'practice_db', userId = null) {
+        let targetDb = databaseName;
+        if (userId && targetDb !== 'practice_db' && !targetDb.startsWith(`user_${userId}_`)) {
+            targetDb = `user_${userId}_${targetDb}`;
+        }
+        
+        let querySql = sql;
+        if (userId) {
+            await this.ensureUserDbPermissions(userId);
+            querySql = this.rewriteDatabaseDDL(sql, userId);
+        }
+
         const connection = await practiceDb.getConnection();
         try {
-            await connection.changeUser({ database: databaseName });
+            if (userId) {
+                await connection.changeUser({ user: `u_${userId}`, password: 'sandbox', database: targetDb });
+            } else {
+                await connection.changeUser({ database: targetDb });
+            }
             // MySQL 8 supports EXPLAIN FORMAT=JSON
-            const [rows] = await connection.query(`EXPLAIN FORMAT=JSON ${sql}`);
+            const [rows] = await connection.query(`EXPLAIN FORMAT=JSON ${querySql}`);
             return rows;
         } finally {
+            if (userId) {
+                await connection.changeUser({ user: process.env.DB_USER || 'root', password: process.env.DB_PASSWORD || 'root', database: 'practice_db' });
+            }
             connection.release();
         }
     }
 
-    async getSchema(databaseName = 'practice_db') {
+    async getSchema(databaseName = 'practice_db', userId = null) {
+        let targetDb = databaseName;
+        if (userId && targetDb !== 'practice_db' && !targetDb.startsWith(`user_${userId}_`)) {
+            targetDb = `user_${userId}_${targetDb}`;
+        }
+
         const [columns] = await practiceDb.query(`
             SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_KEY
             FROM information_schema.COLUMNS 
             WHERE TABLE_SCHEMA = ?
             ORDER BY TABLE_NAME, ORDINAL_POSITION
-        `, [databaseName]);
+        `, [targetDb]);
         
         const [views] = await practiceDb.query(`
             SELECT TABLE_NAME
             FROM information_schema.VIEWS
             WHERE TABLE_SCHEMA = ?
             ORDER BY TABLE_NAME
-        `, [databaseName]);
+        `, [targetDb]);
         
         const [relationships] = await practiceDb.query(`
             SELECT
@@ -59,7 +139,7 @@ class QueryRepository {
             WHERE TABLE_SCHEMA = ?
                 AND REFERENCED_TABLE_NAME IS NOT NULL
             ORDER BY TABLE_NAME, COLUMN_NAME
-        `, [databaseName]);
+        `, [targetDb]);
 
         const tables = columns.reduce((acc, column) => {
             let table = acc.find(item => item.name === column.TABLE_NAME);
@@ -78,7 +158,7 @@ class QueryRepository {
         }, []);
 
         return {
-            database: databaseName,
+            database: targetDb,
             tables,
             views: views.map(view => view.TABLE_NAME),
             relationships: relationships.map(relationship => ({
@@ -95,14 +175,28 @@ class QueryRepository {
         return this.getSchema('practice_db');
     }
 
-    async getDatabases() {
-        const [rows] = await practiceDb.query(`
+    async getDatabases(userId = null) {
+        let query = `
             SELECT SCHEMA_NAME 
             FROM information_schema.SCHEMATA
             WHERE SCHEMA_NAME NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys', 'auth_db', 'sql_db', 'challenge_db', 'analytics_db')
-            ORDER BY SCHEMA_NAME
-        `);
-        return rows.map(r => r.SCHEMA_NAME);
+        `;
+        const params = [];
+        if (userId) {
+            query += ` AND (SCHEMA_NAME = 'practice_db' OR SCHEMA_NAME LIKE ?)`;
+            params.push(`user\\_${userId}\\__%`);
+        }
+        query += ` ORDER BY SCHEMA_NAME`;
+
+        const [rows] = await practiceDb.query(query, params);
+        
+        return rows.map(r => {
+            const name = r.SCHEMA_NAME;
+            if (userId && name.startsWith(`user_${userId}_`)) {
+                return name.replace(`user_${userId}_`, '');
+            }
+            return name;
+        });
     }
 
     // Save history

@@ -111,7 +111,8 @@ class SqlController {
 
     async getSchema(req, res) {
         try {
-            const data = await sqlService.getSchema(req.query.db);
+            const userId = req.headers['x-user-id'];
+            const data = await sqlService.getSchema(req.query.db, userId);
             res.json(data);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -120,7 +121,8 @@ class SqlController {
 
     async getSchemaGraph(req, res) {
         try {
-            const data = await sqlService.getSchemaGraph(req.query.startTable, req.query.db);
+            const userId = req.headers['x-user-id'];
+            const data = await sqlService.getSchemaGraph(req.query.startTable, req.query.db, userId);
             res.json(data);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -130,11 +132,12 @@ class SqlController {
     async analyze(req, res) {
         try {
             const { query, database } = req.body;
+            const userId = req.headers['x-user-id'];
             if (!query) {
                 return res.status(400).json({ error: 'SQL query is required.' });
             }
 
-            const data = await sqlService.analyzeQuery(query, database);
+            const data = await sqlService.analyzeQuery(query, database, userId);
             if (data.error) {
                 return res.status(400).json(data);
             }
@@ -146,7 +149,8 @@ class SqlController {
 
     async getDatabases(req, res) {
         try {
-            const data = await sqlService.getDatabases();
+            const userId = req.headers['x-user-id'];
+            const data = await sqlService.getDatabases(userId);
             res.json({ data });
         } catch (error) {
             res.status(500).json({ error: error.message });

@@ -15,24 +15,19 @@ type SavedQuery = {
   updated_at?: string;
 };
 
-const fallbackSavedQueries: SavedQuery[] = [
-  { id: 1, title: 'Select Employee Salary', query_text: 'SELECT name, salary FROM employee;', collection: 'Interview', notes: 'Basic SELECT practice', created_at: '2026-07-31', updated_at: '2026-07-31' },
-  { id: 2, title: 'Average Salary', query_text: 'SELECT department, AVG(salary) FROM employee GROUP BY department;', collection: 'Practice', notes: 'Aggregate drill', created_at: '2026-07-31', updated_at: '2026-07-31' },
-  { id: 3, title: 'Customer Orders', query_text: 'SELECT c.name, o.total FROM customers c JOIN orders o ON o.customer_id = c.id;', collection: 'Assignments', notes: 'JOIN example', created_at: '2026-07-31', updated_at: '2026-07-31' },
-];
-
+// No fallback queries - we only show real saved queries.
 const collections = ['Interview', 'Practice', 'Favorites', 'Assignments'];
 
 export const SavedQueries: React.FC = () => {
   const navigate = useNavigate();
   const { setCurrentQuery } = useSqlStore();
-  const [queries, setQueries] = React.useState<SavedQuery[]>(fallbackSavedQueries);
+  const [queries, setQueries] = React.useState<SavedQuery[]>([]);
   const [activeCollection, setActiveCollection] = React.useState('Interview');
 
   const fetchQueries = React.useCallback(() => {
     api.get('/saved-queries')
-      .then(({ data }) => setQueries(data.data?.length ? data.data : fallbackSavedQueries))
-      .catch(() => setQueries(fallbackSavedQueries));
+      .then(({ data }) => setQueries(data.data || []))
+      .catch(() => setQueries([]));
   }, []);
 
   React.useEffect(() => {

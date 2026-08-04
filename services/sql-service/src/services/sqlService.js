@@ -134,7 +134,7 @@ class SqlService {
                 }
             }
 
-            const result = await queryRepository.executeQuery(queryText, databaseName);
+            const result = await queryRepository.executeQuery(queryText, databaseName, userId);
             const executionTime = Date.now() - startTime;
             const rowCount = Array.isArray(result.rows) && result.rows.length > 0
                 ? result.rows.length
@@ -189,21 +189,27 @@ class SqlService {
         return queryRepository.getHistory(userId);
     }
 
-    async getSchema(databaseName = 'practice_db') {
+    async getSchema(databaseName = 'practice_db', userId = null) {
         const cachedSchema = this.schemaCache.get(databaseName);
         if (cachedSchema) return { ...cachedSchema, cache: { hit: true, strategy: 'LRU' } };
 
-        const schema = await queryRepository.getSchema(databaseName);
+        const schema = await queryRepository.getSchema(databaseName, userId);
+        
+        // Strip the isolated prefix for the client UI
+        if (userId && schema.database.startsWith(`user_${userId}_`)) {
+            schema.database = schema.database.replace(`user_${userId}_`, '');
+        }
+
         this.schemaCache.put(databaseName, schema);
         return schema;
     }
 
-    async getDatabases() {
-        return await queryRepository.getDatabases();
+    async getDatabases(userId = null) {
+        return await queryRepository.getDatabases(userId);
     }
 
-    async getSchemaGraph(startTable, databaseName = 'practice_db') {
-        const schema = await this.getSchema(databaseName);
+    async getSchemaGraph(startTable, databaseName = 'practice_db', userId = null) {
+        const schema = await this.getSchema(databaseName, userId);
         const graph = new SchemaGraph();
 
         schema.tables.forEach(table => graph.addTable(table.name));
@@ -240,14 +246,14 @@ class SqlService {
         return normalized.startsWith('SELECT') && !/\b(NOW|RAND|UUID|CURRENT_TIMESTAMP)\s*\(/.test(normalized);
     }
 
-    async analyzeQuery(sql, databaseName = 'practice_db') {
+    async analyzeQuery(sql, databaseName = 'practice_db', userId = null) {
         try {
             // Only SELECT queries are safe for EXPLAIN
             if (!sql.trim().toUpperCase().startsWith('SELECT')) {
                 return { error: 'Analysis is only available for SELECT queries.' };
             }
 
-            const explainRows = await queryRepository.getExplainPlan(sql, databaseName);
+            const explainRows = await queryRepository.getExplainPlan(sql, databaseName, userId);
             if (!explainRows || explainRows.length === 0) return { error: 'No execution plan generated' };
             
             const rawPlan = explainRows[0].EXPLAIN;

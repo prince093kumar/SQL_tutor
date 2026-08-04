@@ -21,23 +21,14 @@ pipeline {
 
     stages {
 
-        /*
-         * =====================================================
-         * 1. CHECKOUT
-         * =====================================================
-         */
+       
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        /*
-         * =====================================================
-         * 2. VERIFY LOCAL JENKINS ENVIRONMENT
-         * Jenkins is running on Windows
-         * =====================================================
-         */
+       
         stage('Verify Environment') {
             steps {
                 bat '''
@@ -56,11 +47,7 @@ pipeline {
             }
         }
 
-        /*
-         * =====================================================
-         * 3. DOCKER HUB LOGIN
-         * =====================================================
-         */
+       
         stage('Docker Hub Login') {
             steps {
                 withCredentials([
@@ -77,17 +64,7 @@ pipeline {
             }
         }
 
-        /*
-         * =====================================================
-         * IMPORTANT:
-         *
-         * Do NOT build all services in parallel right now.
-         *
-         * Each Dockerfile runs pnpm install.
-         * Parallel builds create too many simultaneous
-         * requests to registry.npmjs.org.
-         * =====================================================
-         */
+        
 
         stage('Build Client') {
             steps {
@@ -167,11 +144,7 @@ pipeline {
             }
         }
 
-        /*
-         * =====================================================
-         * 4. PUSH IMAGES
-         * =====================================================
-         */
+       
         stage('Push Images') {
             steps {
                 bat '''
@@ -185,11 +158,7 @@ pipeline {
             }
         }
 
-        /*
-         * =====================================================
-         * 5. TEST EC2 CONNECTION
-         * =====================================================
-         */
+       
         stage('Test EC2 Connection') {
             steps {
                 withCredentials([
@@ -210,11 +179,7 @@ pipeline {
             }
         }
 
-        /*
-         * =====================================================
-         * 6. COPY DEPLOYMENT FILES
-         * =====================================================
-         */
+       
         stage('Copy Deployment Files') {
             steps {
                 withCredentials([
@@ -251,11 +216,7 @@ pipeline {
             }
         }
 
-        /*
-         * =====================================================
-         * 7. DEPLOY
-         * =====================================================
-         */
+       
         stage('Deploy to EC2') {
             steps {
                 withCredentials([

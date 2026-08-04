@@ -29,11 +29,7 @@ type SchemaTable = {
   columns: SchemaColumn[];
 };
 
-type DatabaseSchema = {
-  database: string;
-  tables: SchemaTable[];
-  views?: string[];
-};
+
 
 const fallbackObjects = {
   tables: ['employee', 'department', 'orders', 'customers', 'products'],
@@ -102,7 +98,7 @@ export const Sidebar: React.FC = () => {
     }
   }, [activeTab, selectedDatabase]);
 
-  const currentTable = schema?.tables?.find(table => table.name === selectedTable);
+  const currentTable = schema?.tables?.find((table: SchemaTable) => table.name === selectedTable);
 
   return (
     <div className="flex h-full w-64 flex-col overflow-hidden border-r border-vscode-border bg-[#091421]/95 text-sm">
@@ -175,7 +171,7 @@ export const Sidebar: React.FC = () => {
                   columns: name === 'employee'
                     ? [{ name: 'id', type: 'int', key: 'PRI' }, { name: 'name', type: 'varchar' }, { name: 'salary', type: 'decimal' }, { name: 'department_id', type: 'int' }]
                     : [],
-                }))).map(table => {
+                }))).map((table: SchemaTable) => {
                   const isActive = selectedTable === table.name || (!selectedTable && table.name === 'employee');
                   return (
                     <div key={table.name}>
@@ -189,7 +185,7 @@ export const Sidebar: React.FC = () => {
                       {isActive && (
                         <div className="ml-6 mt-1 space-y-1 border-l border-vscode-border pl-3">
                           <div className="flex items-center text-[11px] font-semibold uppercase text-vscode-text/55"><ChevronDown size={12} className="mr-1" /> Columns</div>
-                          {(table.columns.length ? table.columns : [{ name: 'id' }, { name: 'name' }, { name: 'salary' }, { name: 'department_id' }]).map(column => (
+                          {(table.columns.length ? table.columns : [{ name: 'id' }, { name: 'name' }, { name: 'salary' }, { name: 'department_id' }]).map((column: any) => (
                             <div key={column.name} className="flex justify-between gap-2 rounded px-1 py-0.5 text-xs text-vscode-text/75 hover:bg-white/[0.04]">
                               <span>{column.name}</span>
                               {column.key && <span className="text-green-300">{column.key}</span>}
@@ -206,7 +202,7 @@ export const Sidebar: React.FC = () => {
               <div className="mb-2 flex items-center text-xs font-semibold uppercase text-vscode-text/70">
                 <ChevronDown size={14} className="mr-1" /> Views ({schema?.views?.length || 2})
               </div>
-              {(schema?.views?.length ? schema.views : fallbackObjects.views).map(view => (
+              {(schema?.views?.length ? schema.views : fallbackObjects.views).map((view: string) => (
                 <div key={view} className="flex items-center rounded-md px-3 py-2 text-vscode-text/90 hover:bg-white/[0.08] cursor-pointer transition-colors"><Folder size={15} className="mr-2 text-purple-300" />{view}</div>
               ))}
             </div>
@@ -239,7 +235,7 @@ export const Sidebar: React.FC = () => {
             <div className="rounded-lg border border-vscode-border bg-[#07111d] p-3">
               <div className="mb-2 text-xs font-semibold uppercase text-vscode-text/70">Columns</div>
               <div className="space-y-1">
-                {currentTable?.columns.map(column => (
+                {currentTable?.columns.map((column: SchemaColumn) => (
                   <div key={column.name} className="flex justify-between gap-2 text-xs text-vscode-text/80">
                     <span>{column.name}</span>
                     <span className="text-vscode-text/45">{column.type}</span>
