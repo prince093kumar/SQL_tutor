@@ -230,7 +230,7 @@ pipeline {
                         ssh -o StrictHostKeyChecking=no ^
                         -i "%EC2_KEY%" ^
                         %SSH_USER%@%EC2_HOST% ^
-                        "mkdir -p /opt/sqllab"
+                        "sudo mkdir -p /opt/sqllab && sudo chown -R %SSH_USER%:%SSH_USER% /opt/sqllab"
                     '''
 
                     bat '''
