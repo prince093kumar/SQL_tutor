@@ -10,18 +10,24 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
+  user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null,
   token: localStorage.getItem('token'),
   isAuthenticated: !!localStorage.getItem('token'),
   login: (user, token) => {
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
     set({ user, token, isAuthenticated: true });
   },
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     set({ user: null, token: null, isAuthenticated: false });
   },
-  updateUser: (data) => set((state) => ({
-    user: state.user ? { ...state.user, ...data } : null
-  })),
+  updateUser: (data) => set((state) => {
+    const newUser = state.user ? { ...state.user, ...data } : null;
+    if (newUser) {
+      localStorage.setItem('user', JSON.stringify(newUser));
+    }
+    return { user: newUser };
+  }),
 }));

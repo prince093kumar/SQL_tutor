@@ -29,7 +29,7 @@ export const AppNavbar: React.FC = () => {
     navigate('/login');
   };
 
-  const displayName = user?.username || 'Prince';
+  const displayName = user?.username || 'User';
   
   // The Playground route is '/' in App.tsx, but the label is 'Playground'
   const isPlayground = location.pathname === '/' || location.pathname === '/playground';

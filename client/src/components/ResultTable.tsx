@@ -8,7 +8,7 @@ interface ResultTableProps {
 }
 
 export const ResultTable: React.FC<ResultTableProps> = ({ onClose }) => {
-  const { currentQuery, queryResult, isExecuting } = useSqlStore();
+  const { currentQuery, queryResult, isExecuting, selectedDatabase } = useSqlStore();
   const [activeTab, setActiveTab] = React.useState<'result' | 'messages' | 'console' | 'plan' | 'history'>('result');
   const [search, setSearch] = React.useState('');
   const [rowsPerPage, setRowsPerPage] = React.useState(25);
@@ -136,7 +136,7 @@ export const ResultTable: React.FC<ResultTableProps> = ({ onClose }) => {
         <span className="flex items-center gap-1"><Clock size={14} className="opacity-50" /> Execution Time <strong className="font-medium text-white">{executionTimeMs} ms</strong></span>
         <span>Rows <strong className="text-white">{rowCount || 0}</strong></span>
         <span>Columns <strong className="text-white">{columnCount}</strong></span>
-        <span>Database <strong className="text-white">practice_db</strong></span>
+        <span>Database <strong className="text-white">{selectedDatabase}</strong></span>
         {affectedRows > 0 && <span>{affectedRows} affected</span>}
         <div className="ml-auto flex gap-2">
           <button onClick={() => downloadFile('query-result.csv', toCsv(), 'text/csv')} disabled={!queryResult.success || !fields.length} className="secondary-action flex items-center gap-1 px-2 py-1"><FileDown size={13} /> CSV</button>
@@ -149,7 +149,7 @@ export const ResultTable: React.FC<ResultTableProps> = ({ onClose }) => {
         <div className="flex-1 overflow-auto p-4 text-sm">
           {queryResult.success ? (
             <div className="rounded-md border border-emerald-400/30 bg-emerald-400/10 p-3 text-emerald-200">
-              Query completed on practice_db in {executionTimeMs} ms.
+              Query completed on {selectedDatabase} in {executionTimeMs} ms.
             </div>
           ) : (
             <div className="rounded-md border border-red-400/30 bg-red-500/10 p-3 text-red-200">

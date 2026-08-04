@@ -28,32 +28,19 @@ type RecentSubmission = {
 };
 
 const fallbackStats = {
-  solved: 42,
-  xp: 1240,
-  accuracy: 87,
-  ranking: 21,
-  streak: 18,
+  solved: 0,
+  xp: 0,
+  accuracy: 0,
+  ranking: 0,
+  streak: 0,
   difficulties: [
-    { difficulty: 'easy', solved: 21, total: 25 },
-    { difficulty: 'medium', solved: 14, total: 25 },
-    { difficulty: 'hard', solved: 4, total: 10 },
+    { difficulty: 'easy', solved: 0, total: 0 },
+    { difficulty: 'medium', solved: 0, total: 0 },
+    { difficulty: 'hard', solved: 0, total: 0 },
   ] as DifficultyProgress[],
-  skills: [
-    { topic: 'SELECT', strength: 95 },
-    { topic: 'WHERE', strength: 90 },
-    { topic: 'JOIN', strength: 78 },
-    { topic: 'GROUP BY', strength: 82 },
-    { topic: 'Subqueries', strength: 65 },
-    { topic: 'Window Functions', strength: 48 },
-    { topic: 'CTE', strength: 40 },
-  ] as Skill[],
+  skills: [] as Skill[],
   activity: [] as ActivityDay[],
-  recentSubmissions: [
-    { challenge: 'JOIN Basics', status: 'Accepted', runtime: '21ms' },
-    { challenge: 'Average Salary', status: 'Accepted', runtime: '18ms' },
-    { challenge: 'Third Highest Salary', status: 'Failed', runtime: '32ms' },
-    { challenge: 'CTE Basics', status: 'Accepted', runtime: '25ms' },
-  ] as RecentSubmission[],
+  recentSubmissions: [] as RecentSubmission[],
 };
 
 const buildHeatmap = (activity: ActivityDay[]) => {
@@ -97,8 +84,8 @@ export const Profile: React.FC = () => {
     }
   };
 
-  const username = user?.username || 'prince';
-  const displayName = user?.full_name || (username === 'prince' ? 'Prince Kumar' : username);
+  const username = user?.username || 'User';
+  const displayName = user?.full_name || username;
   const initials = displayName.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase();
   const heatmap = buildHeatmap(stats.activity);
 

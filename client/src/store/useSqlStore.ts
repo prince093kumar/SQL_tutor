@@ -35,6 +35,12 @@ interface SqlState {
   setActiveTab: (id: string) => void;
   createNewQuery: () => void;
   updateTabStatus: (id: string, updates: Partial<EditorTab>) => void;
+
+  // Schema & Databases
+  databases: string[];
+  schema: any | null;
+  fetchDatabases: () => Promise<void>;
+  fetchSchema: (db?: string) => Promise<void>;
 }
 
 const DEFAULT_QUERY = '-- Write your SQL query here\n';
@@ -61,7 +67,39 @@ export const useSqlStore = create<SqlState>((set, get) => {
     savedQueries: [],
     isExecuting: false,
     selectedDatabase: 'practice_db',
+    databases: ['practice_db'],
+    schema: null,
     
+    fetchDatabases: async () => {
+      try {
+        const { default: api } = await import('../utils/api');
+        const { data } = await api.get('/sql/databases');
+        if (data.data) {
+          set((state) => {
+            const newDatabases = data.data;
+            const isSelectedDatabaseValid = newDatabases.includes(state.selectedDatabase);
+            return {
+              databases: newDatabases,
+              selectedDatabase: isSelectedDatabaseValid ? state.selectedDatabase : (newDatabases[0] || 'practice_db')
+            };
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch databases:', error);
+      }
+    },
+
+    fetchSchema: async (db) => {
+      try {
+        const { default: api } = await import('../utils/api');
+        const targetDb = db || get().selectedDatabase;
+        const { data } = await api.get(`/sql/schema?db=${targetDb}`);
+        set({ schema: data });
+      } catch (error) {
+        console.error('Failed to fetch schema:', error);
+      }
+    },
+
     setCurrentQuery: (query) => set((state) => {
       const updatedTabs = state.tabs.map(tab => 
         tab.id === state.activeTabId 

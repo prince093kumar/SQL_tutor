@@ -148,31 +148,15 @@ export const ChallengeWorkspace: React.FC = () => {
     }
   }, [challenges, slugFromUrl, navigate]);
 
-  // Load draft or default context when challenge changes
+  // Load default context when challenge changes
   useEffect(() => {
     if (selectedChallenge && selectedChallenge.id !== lastRun?.challengeId) {
-      const draftKey = `sqllab.challenge.drafts.${selectedChallenge.id}`;
-      const savedDraft = localStorage.getItem(draftKey);
-      
-      if (savedDraft) {
-        setQuery(savedDraft);
-      } else {
-        setQuery(buildEditorContext(selectedChallenge));
-      }
-      
+      setQuery(buildEditorContext(selectedChallenge));
       setResult(null);
       setActivePanel('tests');
       setLastRun(null);
     }
   }, [selectedChallenge?.id]);
-
-  // Save drafts as they type
-  useEffect(() => {
-    if (selectedChallenge && query) {
-      const draftKey = `sqllab.challenge.drafts.${selectedChallenge.id}`;
-      localStorage.setItem(draftKey, query);
-    }
-  }, [query, selectedChallenge?.id]);
 
   const toggleDifficulty = (val: Difficulty) => setDifficultyFilters(curr => curr.includes(val) ? curr.filter(i => i !== val) : [...curr, val]);
   const toggleCategory = (val: string) => setCategoryFilters(curr => curr.includes(val) ? curr.filter(i => i !== val) : [...curr, val]);

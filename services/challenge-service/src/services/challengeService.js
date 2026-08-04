@@ -11,6 +11,10 @@ class ChallengeService {
         return challengeRepository.getChallengeById(id);
     }
 
+    async getLatestSubmission(userId, challengeId) {
+        return challengeRepository.getLatestSubmission(userId, challengeId);
+    }
+
     async getCategories() {
         const challenges = await this.getChallenges();
         const grouped = challenges.reduce((acc, challenge) => {
@@ -136,7 +140,7 @@ class ChallengeService {
         }
 
         await challengeRepository.logSubmission(userId, challengeId, queryText, status, executionTimeMs);
-        await challengeRepository.updateScore(userId, isCorrect);
+        await challengeRepository.updateScore(userId, challengeId, isCorrect, challenge.xp || 10);
         
         if (isCorrect) {
             const { pubsub, Events } = await import('@sqllab/shared');
@@ -158,16 +162,14 @@ class ChallengeService {
     async getLeaderboard() {
         const rows = await challengeRepository.getLeaderboardCandidates();
         const heap = new MaxHeap(user => {
-            const score = Number(user.total_score || 0);
-            const completedBonus = Number(user.challenges_completed || 0) * 5;
-            return score + completedBonus;
+            return Number(user.total_score || 0);
         });
 
         rows.forEach(row => heap.insert(row));
         return heap.top(10).map((user, index) => ({
             ...user,
             rank: index + 1,
-            rankingScore: Number(user.total_score || 0) + Number(user.challenges_completed || 0) * 5
+            rankingScore: Number(user.total_score || 0)
         }));
     }
 

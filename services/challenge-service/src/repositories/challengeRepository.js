@@ -82,17 +82,25 @@ class ChallengeRepository {
         return result.insertId;
     }
 
-    async updateScore(userId, isCorrect) {
-        // Simple scoring: +10 per correct submission
+    async updateScore(userId, challengeId, isCorrect, xp = 10) {
+        // Simple scoring: +xp per correct submission, but only the first time
         if (!isCorrect) return;
         
-        await db.query(`
-            INSERT INTO user_scores (user_id, total_score, challenges_completed)
-            VALUES (?, 10, 1)
-            ON DUPLICATE KEY UPDATE 
-            total_score = total_score + 10,
-            challenges_completed = challenges_completed + 1
-        `, [userId]);
+        const [rows] = await db.query(
+            "SELECT COUNT(id) AS passed_count FROM submissions WHERE user_id = ? AND challenge_id = ? AND status = 'passed'",
+            [userId, challengeId]
+        );
+        
+        // Only update score if this is their first time passing the challenge
+        if (rows[0].passed_count === 1) {
+            await db.query(`
+                INSERT INTO user_scores (user_id, total_score, challenges_completed)
+                VALUES (?, ?, 1)
+                ON DUPLICATE KEY UPDATE 
+                total_score = total_score + ?,
+                challenges_completed = challenges_completed + 1
+            `, [userId, xp, xp]);
+        }
     }
 
     async getLeaderboardCandidates() {
@@ -106,6 +114,14 @@ class ChallengeRepository {
 
     async getLeaderboard() {
         return this.getLeaderboardCandidates();
+    }
+
+    async getLatestSubmission(userId, challengeId) {
+        const [rows] = await db.query(
+            "SELECT query_text, status, execution_time_ms FROM submissions WHERE user_id = ? AND challenge_id = ? AND status = 'passed' ORDER BY created_at DESC LIMIT 1",
+            [userId, challengeId]
+        );
+        return rows[0] ? rows[0] : null;
     }
 
     async getWeakTopics(userId) {

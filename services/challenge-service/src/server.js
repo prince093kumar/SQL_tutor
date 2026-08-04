@@ -24,6 +24,7 @@ router.get('/leaderboard', challengeController.getLeaderboard.bind(challengeCont
 router.get('/recommended', challengeController.getRecommendedChallenges.bind(challengeController));
 router.get('/profile-stats', challengeController.getProfileStats.bind(challengeController));
 router.post('/:id/bookmark', challengeController.toggleBookmark.bind(challengeController));
+router.get('/:id/submission', challengeController.getLatestSubmission.bind(challengeController));
 router.get('/:id', challengeController.getChallengeById.bind(challengeController));
 router.post('/run', challengeController.runChallenge.bind(challengeController));
 router.post('/submit', challengeController.submitChallenge.bind(challengeController));

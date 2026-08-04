@@ -46,9 +46,8 @@ const fallbackObjects = {
 export const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { history, savedQueries, setCurrentQuery, setHistory, setSavedQueries, selectedDatabase } = useSqlStore();
+  const { history, savedQueries, setCurrentQuery, setHistory, setSavedQueries, selectedDatabase, schema, fetchSchema: globalFetchSchema } = useSqlStore();
   const [activeTab, setActiveTab] = React.useState<'playground' | 'history' | 'saved'>('playground');
-  const [schema, setSchema] = React.useState<DatabaseSchema | null>(null);
   const [selectedTable, setSelectedTable] = React.useState<string>('');
   const [schemaError, setSchemaError] = React.useState('');
   const [isResetting, setIsResetting] = React.useState(false);
@@ -74,9 +73,8 @@ export const Sidebar: React.FC = () => {
   const fetchSchema = async () => {
     try {
       setSchemaError('');
-      const { data } = await api.get(`/sql/schema?db=${selectedDatabase}`);
-      setSchema(data);
-      setSelectedTable(current => data.tables?.some((table: SchemaTable) => table.name === current) ? current : data.tables?.[0]?.name || '');
+      await globalFetchSchema(selectedDatabase);
+      setSelectedTable(current => useSqlStore.getState().schema?.tables?.some((table: SchemaTable) => table.name === current) ? current : useSqlStore.getState().schema?.tables?.[0]?.name || '');
     } catch (error: any) {
       setSchemaError(error.response?.data?.error?.message || error.response?.data?.error || error.message);
     }
@@ -85,9 +83,8 @@ export const Sidebar: React.FC = () => {
   const resetDatabase = async () => {
     setIsResetting(true);
     try {
-      const { data } = await api.post('/sql/reset');
-      setSchema(data);
-      setSelectedTable(data.tables?.[0]?.name || '');
+      await api.post('/sql/reset');
+      await fetchSchema();
       setSchemaError('');
     } catch (error: any) {
       setSchemaError(error.response?.data?.error?.message || error.response?.data?.error || error.message);

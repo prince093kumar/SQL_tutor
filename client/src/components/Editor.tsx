@@ -16,10 +16,12 @@ export const Editor: React.FC = () => {
     setActiveTab,
     removeTab,
     selectedDatabase,
-    setSelectedDatabase
+    setSelectedDatabase,
+    databases,
+    fetchDatabases,
+    fetchSchema
   } = useSqlStore();
   
-  const [databases, setDatabases] = React.useState<string[]>(['practice_db']);
   const [limit, setLimit] = React.useState('100');
   const [executionMode, setExecutionMode] = React.useState('Auto Commit');
 
@@ -42,16 +44,6 @@ export const Editor: React.FC = () => {
   }, [currentQuery, activeTabId]);
 
   useEffect(() => {
-    const fetchDatabases = async () => {
-      try {
-        const { data } = await api.get('/sql/databases');
-        if (data.data) {
-          setDatabases(data.data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch databases:', error);
-      }
-    };
     fetchDatabases();
   }, []);
 
@@ -62,6 +54,13 @@ export const Editor: React.FC = () => {
     try {
       const { data } = await api.post('/sql/execute', { query: currentQuery, database: selectedDatabase });
       setQueryResult(data);
+      
+      // Auto-refresh schema/databases if it looks like a DDL/DML query
+      const upper = currentQuery.toUpperCase();
+      if (upper.includes('CREATE ') || upper.includes('DROP ') || upper.includes('ALTER ')) {
+        fetchDatabases();
+        fetchSchema();
+      }
     } catch (error: any) {
       const responseData = error.response?.data;
       setQueryResult({ 

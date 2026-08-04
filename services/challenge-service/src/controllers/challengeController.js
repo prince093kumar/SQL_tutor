@@ -21,6 +21,19 @@ class ChallengeController {
         }
     }
 
+    async getLatestSubmission(req, res) {
+        try {
+            const userId = req.headers['x-user-id'];
+            if (!userId) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+            const data = await challengeService.getLatestSubmission(userId, req.params.id);
+            res.json({ data });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     async runChallenge(req, res) {
         try {
             const { challengeId, queryText } = req.body;

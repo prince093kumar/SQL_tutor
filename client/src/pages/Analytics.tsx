@@ -14,20 +14,13 @@ type SearchResult = {
 const emptySearch: SearchResult = { challenges: [], tables: [], savedQueries: [], suggestions: [] };
 
 const fallbackStats = {
-  solved: 42,
-  accuracy: 87,
-  ranking: 21,
-  streak: 18,
-  xp: 1240,
-  skills: [
-    { topic: 'SELECT', strength: 95 },
-    { topic: 'JOIN', strength: 78 },
-    { topic: 'CTE', strength: 40 },
-  ],
-  recentSubmissions: [
-    { challenge: 'JOIN Basics', status: 'Accepted', runtime: '21ms' },
-    { challenge: 'Average Salary', status: 'Accepted', runtime: '18ms' },
-  ],
+  solved: 0,
+  accuracy: 0,
+  ranking: 0,
+  streak: 0,
+  xp: 0,
+  skills: [],
+  recentSubmissions: [],
 };
 
 const weeklyActivity = [
@@ -69,7 +62,7 @@ export const Analytics: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [searchTerm]);
 
-  const displayName = user?.username || 'Prince';
+  const displayName = user?.username || 'User';
   const metrics = [
     { label: 'Solved', value: `${stats.solved} / 60`, icon: Target, accent: 'from-emerald-400 to-green-500' },
     { label: 'Queries', value: recentQueries.length || 284, icon: BarChart3, accent: 'from-sky-400 to-blue-500' },
