@@ -58,7 +58,11 @@ export const Auth: React.FC = () => {
         navigate('/');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Authentication failed');
+      if (!err.response) {
+        setError('Network Error: Unable to reach the server. Please check your connection or restart the backend.');
+      } else {
+        setError(err.response?.data?.error || (isLogin ? 'Authentication failed' : 'Registration failed'));
+      }
     } finally {
       setLoading(false);
     }

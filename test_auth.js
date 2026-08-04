@@ -1,0 +1,32 @@
+const http = require('http');
+
+const data = JSON.stringify({
+  username: "p242",
+  email: "pk2@gmail.com",
+  password: "password123"
+});
+
+const options = {
+  hostname: 'localhost',
+  port: 3000,
+  path: '/api/v1/auth/register',
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Content-Length': data.length
+  }
+};
+
+const req = http.request(options, res => {
+  console.log(`STATUS: ${res.statusCode}`);
+  res.on('data', d => {
+    process.stdout.write(d);
+  });
+});
+
+req.on('error', error => {
+  console.error('ERROR:', error);
+});
+
+req.write(data);
+req.end();
