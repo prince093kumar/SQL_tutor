@@ -170,7 +170,7 @@ pipeline {
                 ]) {
                     bat '''
                         for /f "delims=" %%i in ('whoami') do icacls "%EC2_KEY%" /inheritance:r /grant:r "%%i":"(R)"
-                        ssh -o StrictHostKeyChecking=no ^
+                        ssh -v -o ConnectTimeout=15 -o StrictHostKeyChecking=no ^
                         -i "%EC2_KEY%" ^
                         %SSH_USER%@%EC2_HOST% ^
                         "echo Jenkins connected successfully && hostname && docker --version && docker compose version"
@@ -192,22 +192,22 @@ pipeline {
 
                     bat '''
                         for /f "delims=" %%i in ('whoami') do icacls "%EC2_KEY%" /inheritance:r /grant:r "%%i":"(R)"
-                        ssh -o StrictHostKeyChecking=no ^
+                        ssh -v -o ConnectTimeout=15 -o StrictHostKeyChecking=no ^
                         -i "%EC2_KEY%" ^
                         %SSH_USER%@%EC2_HOST% ^
                         "sudo mkdir -p /opt/sqllab && sudo chown -R %SSH_USER%:%SSH_USER% /opt/sqllab"
                     '''
 
                     bat '''
-                        scp -o StrictHostKeyChecking=no ^
+                        scp -v -o ConnectTimeout=15 -o StrictHostKeyChecking=no ^
                         -i "%EC2_KEY%" ^
                         docker-compose.prod.yml ^
                         %SSH_USER%@%EC2_HOST%:/opt/sqllab/docker-compose.yml
                     '''
 
                     bat '''
-                        scp -r ^
-                        -o StrictHostKeyChecking=no ^
+                        scp -v -r ^
+                        -o ConnectTimeout=15 -o StrictHostKeyChecking=no ^
                         -i "%EC2_KEY%" ^
                         docker ^
                         %SSH_USER%@%EC2_HOST%:/opt/sqllab/
@@ -229,7 +229,7 @@ pipeline {
 
                     bat '''
                         for /f "delims=" %%i in ('whoami') do icacls "%EC2_KEY%" /inheritance:r /grant:r "%%i":"(R)"
-                        ssh -o StrictHostKeyChecking=no ^
+                        ssh -v -o ConnectTimeout=15 -o StrictHostKeyChecking=no ^
                         -i "%EC2_KEY%" ^
                         %SSH_USER%@%EC2_HOST% ^
                         "cd /opt/sqllab && REGISTRY_PREFIX=%DOCKER_USERNAME%/ docker compose pull && REGISTRY_PREFIX=%DOCKER_USERNAME%/ docker compose up -d --remove-orphans"
@@ -255,7 +255,7 @@ pipeline {
 
                     bat '''
                         for /f "delims=" %%i in ('whoami') do icacls "%EC2_KEY%" /inheritance:r /grant:r "%%i":"(R)"
-                        ssh -o StrictHostKeyChecking=no ^
+                        ssh -v -o ConnectTimeout=15 -o StrictHostKeyChecking=no ^
                         -i "%EC2_KEY%" ^
                         %SSH_USER%@%EC2_HOST% ^
                         "cd /opt/sqllab && docker compose ps"
