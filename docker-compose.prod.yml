@@ -55,7 +55,7 @@ services:
       - DB_HOST=mysql
       - DB_USER=root
       - DB_PASSWORD=root
-      - DB_NAME=sqllab
+      - DB_NAME=auth_db
       - JWT_SECRET=your_jwt_secret_change_in_prod
     depends_on:
       - mysql
@@ -71,7 +71,7 @@ services:
       - DB_HOST=mysql
       - DB_USER=root
       - DB_PASSWORD=root
-      - DB_NAME=sqllab
+      - DB_NAME=sql_db
     depends_on:
       - mysql
     restart: unless-stopped
@@ -86,7 +86,7 @@ services:
       - DB_HOST=mysql
       - DB_USER=root
       - DB_PASSWORD=root
-      - DB_NAME=sqllab
+      - DB_NAME=challenge_db
       - REDIS_URL=redis://redis:6379
     depends_on:
       - mysql
@@ -100,6 +100,10 @@ services:
     container_name: sqllab_analytics
     environment:
       - PORT=3004
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=analytics_db
       - REDIS_URL=redis://redis:6379
     depends_on:
       - redis
