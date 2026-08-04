@@ -15,7 +15,7 @@ class QueryRepository {
         if (rows.length === 0) {
             await appDb.query(`CREATE USER '${username}'@'%' IDENTIFIED BY 'sandbox'`);
             await appDb.query(`GRANT SELECT, SHOW VIEW ON practice_db.* TO '${username}'@'%'`);
-            await appDb.query(`GRANT ALL PRIVILEGES ON \`user\\_${userId}\\__%\`.* TO '${username}'@'%'`);
+            await appDb.query(`GRANT ALL PRIVILEGES ON user\\_${userId}\\__%.* TO '${username}'@'%'`);
             await appDb.query(`FLUSH PRIVILEGES`);
         }
         this.provisionedUsers.add(userId);
@@ -23,14 +23,18 @@ class QueryRepository {
 
     rewriteDatabaseDDL(sql, userId) {
         let finalSql = sql;
-        const createDbMatch = finalSql.match(/^\s*CREATE\s+DATABASE\s+(IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_]+)/i);
+        
+        // Remove simple comments for matching purposes
+        const cleanSql = finalSql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+        
+        const createDbMatch = cleanSql.match(/\bCREATE\s+DATABASE\s+(IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_]+)/i);
         if (createDbMatch) {
             const dbName = createDbMatch[2];
             const isolatedDbName = `user_${userId}_${dbName}`;
             finalSql = finalSql.replace(new RegExp(`\\b${dbName}\\b`, 'g'), isolatedDbName); 
         }
 
-        const dropDbMatch = finalSql.match(/^\s*DROP\s+DATABASE\s+(IF\s+EXISTS\s+)?([a-zA-Z0-9_]+)/i);
+        const dropDbMatch = cleanSql.match(/\bDROP\s+DATABASE\s+(IF\s+EXISTS\s+)?([a-zA-Z0-9_]+)/i);
         if (dropDbMatch) {
             const dbName = dropDbMatch[2];
             const isolatedDbName = `user_${userId}_${dbName}`;

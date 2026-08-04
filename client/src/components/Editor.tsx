@@ -52,7 +52,8 @@ export const Editor: React.FC = () => {
     setIsExecuting(true);
     setQueryResult(null);
     try {
-      const { data } = await api.post('/sql/execute', { query: currentQuery, database: selectedDatabase });
+      const queryBase64 = btoa(unescape(encodeURIComponent(currentQuery)));
+      const { data } = await api.post('/sql/execute', { queryBase64, database: selectedDatabase });
       setQueryResult(data);
       
       // Auto-refresh schema/databases if it looks like a DDL/DML query

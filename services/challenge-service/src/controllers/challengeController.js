@@ -36,7 +36,10 @@ class ChallengeController {
 
     async runChallenge(req, res) {
         try {
-            const { challengeId, queryText } = req.body;
+            let { challengeId, queryText, queryBase64 } = req.body;
+            if (queryBase64) {
+                queryText = Buffer.from(queryBase64, 'base64').toString('utf8');
+            }
             const userId = req.headers['x-user-id'];
             if (!userId) {
                 return res.status(401).json({ error: 'Unauthorized' });
@@ -54,7 +57,10 @@ class ChallengeController {
 
     async submitChallenge(req, res) {
         try {
-            const { challengeId, queryText } = req.body;
+            let { challengeId, queryText, queryBase64 } = req.body;
+            if (queryBase64) {
+                queryText = Buffer.from(queryBase64, 'base64').toString('utf8');
+            }
             const userId = req.headers['x-user-id'];
             if (!userId) {
                 return res.status(401).json({ error: 'Unauthorized' });

@@ -177,7 +177,8 @@ export const ChallengeWorkspace: React.FC = () => {
     }
     try {
       // Execute against practice data, do not update challenge progress
-      const { data } = await api.post('/challenges/run', { challengeId: selectedChallenge.id, queryText: query });
+      const queryBase64 = btoa(unescape(encodeURIComponent(query)));
+      const { data } = await api.post('/challenges/run', { challengeId: selectedChallenge.id, queryBase64 });
       setResult({ mode: 'run', ...data.data });
       setLastRun({ challengeId: selectedChallenge.id, query, success: Boolean(data.data?.success) });
       setActivePanel('tests');
@@ -192,7 +193,8 @@ export const ChallengeWorkspace: React.FC = () => {
     if (!selectedChallenge || !canSubmit) return;
     try {
       // Evaluate against hidden test cases
-      const { data } = await api.post('/challenges/submit', { challengeId: selectedChallenge.id, queryText: query });
+      const queryBase64 = btoa(unescape(encodeURIComponent(query)));
+      const { data } = await api.post('/challenges/submit', { challengeId: selectedChallenge.id, queryBase64 });
       setResult({ mode: 'submit', ...data.data });
       setActivePanel('tests');
       await loadChallenges(); // refresh statuses

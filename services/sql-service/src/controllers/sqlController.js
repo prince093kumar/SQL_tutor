@@ -3,7 +3,10 @@ import sqlService from '../services/sqlService.js';
 class SqlController {
     async execute(req, res) {
         try {
-            const { query, database } = req.body;
+            let { query, database, queryBase64 } = req.body;
+            if (queryBase64) {
+                query = Buffer.from(queryBase64, 'base64').toString('utf8');
+            }
             const userId = req.headers['x-user-id']; // Provided by Gateway
 
             if (!query) {
@@ -131,7 +134,10 @@ class SqlController {
 
     async analyze(req, res) {
         try {
-            const { query, database } = req.body;
+            let { query, database, queryBase64 } = req.body;
+            if (queryBase64) {
+                query = Buffer.from(queryBase64, 'base64').toString('utf8');
+            }
             const userId = req.headers['x-user-id'];
             if (!query) {
                 return res.status(400).json({ error: 'SQL query is required.' });
