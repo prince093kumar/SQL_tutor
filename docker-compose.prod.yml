@@ -88,6 +88,7 @@ services:
       - DB_PASSWORD=root
       - DB_NAME=challenge_db
       - REDIS_URL=redis://redis:6379
+      - SQL_SERVICE_URL=http://sql-service:3002/api/v1/sql
     depends_on:
       - mysql
       - redis
