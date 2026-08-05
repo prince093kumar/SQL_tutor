@@ -16,7 +16,6 @@ type SavedQuery = {
 };
 
 // No fallback queries - we only show real saved queries.
-const collections = ['Interview', 'Practice', 'Favorites', 'Assignments'];
 
 export const SavedQueries: React.FC = () => {
   const navigate = useNavigate();
@@ -33,6 +32,14 @@ export const SavedQueries: React.FC = () => {
   React.useEffect(() => {
     fetchQueries();
   }, [fetchQueries]);
+
+  const collections = Array.from(new Set(queries.map(q => q.collection || 'Practice')));
+
+  React.useEffect(() => {
+    if (collections.length > 0 && !collections.includes(activeCollection)) {
+      setActiveCollection(collections[0]);
+    }
+  }, [queries]);
 
   const openQuery = (query: SavedQuery) => {
     setCurrentQuery(query.query_text);
