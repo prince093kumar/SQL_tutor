@@ -87,11 +87,17 @@ class SqlService {
             }
         };
 
-        return errorMap[error.code] || {
+        const mappedError = errorMap[error.code] || {
             code: error.code || 'SQL_ERROR',
             message: error.sqlMessage || error.message || 'Query failed.',
             hint: 'Review the query and database schema, then try again.'
         };
+
+        if (mappedError.message) {
+            mappedError.message = mappedError.message.replace(/user_\d+_/g, '');
+        }
+
+        return mappedError;
     }
 
     async executeQuery(userId, sql, databaseName = 'practice_db') {
