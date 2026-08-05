@@ -240,8 +240,8 @@ class SqlService {
         };
     }
 
-    async resetPracticeDatabase() {
-        const schema = await queryRepository.resetPracticeDatabase();
+    async resetPracticeDatabase(userId = null) {
+        const schema = await queryRepository.resetPracticeDatabase(userId);
         this.schemaCache.clear();
         this.readOnlyQueryCache.clear();
         return schema;

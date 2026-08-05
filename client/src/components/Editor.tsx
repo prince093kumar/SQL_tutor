@@ -3,6 +3,7 @@ import MonacoEditor from '@monaco-editor/react';
 import { useSqlStore } from '../store/useSqlStore';
 import { Clipboard, Eraser, Play, Redo2, Save, Sparkles, Undo2, X } from 'lucide-react';
 import api from '../utils/api';
+import { toast } from '../store/useToastStore';
 
 export const Editor: React.FC = () => {
   const { 
@@ -24,6 +25,7 @@ export const Editor: React.FC = () => {
   
   const [limit, setLimit] = React.useState('100');
   const [executionMode, setExecutionMode] = React.useState('Auto Commit');
+  const [editorRef, setEditorRef] = React.useState<any>(null);
 
   const activeTab = tabs.find(t => t.id === activeTabId);
 
@@ -92,7 +94,20 @@ export const Editor: React.FC = () => {
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard?.writeText(currentQuery);
+    try {
+      await navigator.clipboard?.writeText(currentQuery);
+      toast.success('Query copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  };
+
+  const handleUndo = () => {
+    editorRef?.trigger('keyboard', 'undo', null);
+  };
+
+  const handleRedo = () => {
+    editorRef?.trigger('keyboard', 'redo', null);
   };
 
   const handleClear = () => {
@@ -140,8 +155,8 @@ export const Editor: React.FC = () => {
 
       <div className="flex items-center justify-between border-b border-vscode-border bg-[#0d1a28] p-2 text-vscode-text">
         <div className="flex items-center gap-3 text-sm">
-          <button className="icon-button p-1.5" title="Undo"><Undo2 size={15} /></button>
-          <button className="icon-button p-1.5" title="Redo"><Redo2 size={15} /></button>
+          <button type="button" onClick={handleUndo} className="icon-button p-1.5" title="Undo"><Undo2 size={15} /></button>
+          <button type="button" onClick={handleRedo} className="icon-button p-1.5" title="Redo"><Redo2 size={15} /></button>
           <button type="button" onClick={handleFormat} className="secondary-action flex items-center gap-1" title="Format SQL (Ctrl+Shift+F)"><Sparkles size={14} /> Format SQL</button>
           <button type="button" onClick={handleCopy} className="icon-button p-1.5" title="Copy"><Clipboard size={15} /></button>
           <button type="button" onClick={handleClear} className="icon-button p-1.5" title="Clear"><Eraser size={15} /></button>
@@ -191,6 +206,7 @@ export const Editor: React.FC = () => {
           language="sql"
           theme="vs-dark"
           value={currentQuery}
+          onMount={(editor) => setEditorRef(editor)}
           onChange={(val) => setCurrentQuery(val || '')}
           options={{
             minimap: { enabled: false },

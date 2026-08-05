@@ -172,9 +172,21 @@ class QueryRepository {
         };
     }
 
-    async resetPracticeDatabase() {
-        await resetPracticeDatabase();
-        return this.getSchema('practice_db');
+    async resetPracticeDatabase(userId = null) {
+        if (userId) {
+            const [rows] = await practiceDb.query(`
+                SELECT SCHEMA_NAME 
+                FROM information_schema.SCHEMATA
+                WHERE SCHEMA_NAME LIKE ?
+            `, [`user\\_${userId}\\__%`]);
+            
+            for (const row of rows) {
+                await practiceDb.query(`DROP DATABASE IF EXISTS \`${row.SCHEMA_NAME}\``);
+            }
+        } else {
+            await resetPracticeDatabase();
+        }
+        return this.getSchema('practice_db', userId);
     }
 
     async getDatabases(userId = null) {

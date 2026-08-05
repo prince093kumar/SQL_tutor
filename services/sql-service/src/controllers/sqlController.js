@@ -165,8 +165,9 @@ class SqlController {
 
     async reset(req, res) {
         try {
-            const data = await sqlService.resetPracticeDatabase();
-            res.json({ message: 'Practice database reset successfully', ...data });
+            const userId = req.headers['x-user-id'];
+            const data = await sqlService.resetPracticeDatabase(userId);
+            res.json({ message: 'Sandboxes reset successfully', ...data });
         } catch (error) {
             res.status(500).json({
                 error: {
