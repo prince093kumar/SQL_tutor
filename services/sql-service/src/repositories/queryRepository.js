@@ -14,10 +14,13 @@ class QueryRepository {
         const [rows] = await appDb.query(`SELECT User FROM mysql.user WHERE User = ?`, [username]);
         if (rows.length === 0) {
             await appDb.query(`CREATE USER '${username}'@'%' IDENTIFIED BY 'sandbox'`);
-            await appDb.query(`GRANT SELECT, SHOW VIEW ON practice_db.* TO '${username}'@'%'`);
-            await appDb.query(`GRANT ALL PRIVILEGES ON user\\_${userId}\\__%.* TO '${username}'@'%'`);
-            await appDb.query(`FLUSH PRIVILEGES`);
         }
+        
+        // Always grant privileges to ensure existing users get updated permissions
+        await appDb.query(`GRANT SELECT, SHOW VIEW ON practice_db.* TO '${username}'@'%'`);
+        await appDb.query(`GRANT ALL PRIVILEGES ON user\\_${userId}\\_%.* TO '${username}'@'%'`);
+        await appDb.query(`FLUSH PRIVILEGES`);
+        
         this.provisionedUsers.add(userId);
     }
 
