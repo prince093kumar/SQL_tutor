@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 export interface EditorTab {
   id: string;
@@ -29,6 +28,7 @@ interface SqlState {
   setIsExecuting: (isExecuting: boolean) => void;
   setSelectedDatabase: (db: string) => void;
   resetEditor: (query?: string) => void;
+  resetWorkspace: () => void;
 
   // Tab management
   addTab: (tab: Partial<EditorTab>) => void;
@@ -57,7 +57,6 @@ const createDefaultTab = (index: number): EditorTab => ({
 });
 
 export const useSqlStore = create<SqlState>()(
-  persist(
     (set, get) => {
       const initialTab = createDefaultTab(1);
       
@@ -135,6 +134,19 @@ export const useSqlStore = create<SqlState>()(
       };
     }),
 
+    resetWorkspace: () => {
+      const initialTab = createDefaultTab(1);
+      set({
+        tabs: [initialTab],
+        activeTabId: initialTab.id,
+        currentQuery: initialTab.query,
+        queryResult: null,
+        history: [],
+        savedQueries: [],
+        isExecuting: false,
+      });
+    },
+
     addTab: (tab) => set((state) => {
       const newTab: EditorTab = {
         id: generateTabId(),
@@ -204,12 +216,4 @@ export const useSqlStore = create<SqlState>()(
       )
     }))
   };
-}, {
-  name: 'sqllab-workspace-storage',
-  partialize: (state) => ({ 
-    tabs: state.tabs, 
-    activeTabId: state.activeTabId, 
-    currentQuery: state.currentQuery,
-    selectedDatabase: state.selectedDatabase
-  })
-}));
+});

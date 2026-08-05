@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-
+import { useSqlStore } from './useSqlStore';
 interface AuthState {
   user: { id: number; username: string; email: string; full_name?: string; university?: string } | null;
   token: string | null;
@@ -16,11 +16,21 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: (user, token) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
+    
+    // Clear out old workspace for the new user or relogin
+    localStorage.removeItem('sqllab-workspace-storage');
+    useSqlStore.getState().resetWorkspace();
+
     set({ user, token, isAuthenticated: true });
   },
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    
+    // Clear out workspace on logout
+    localStorage.removeItem('sqllab-workspace-storage');
+    useSqlStore.getState().resetWorkspace();
+
     set({ user: null, token: null, isAuthenticated: false });
   },
   updateUser: (data) => set((state) => {
