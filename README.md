@@ -58,6 +58,39 @@ SQLLab is composed of specialized, decoupled services:
 4. **Challenge Service (`/services/challenge-service`)**: Manages the SQL problem sets, hidden test cases, submissions, and leaderboard rankings.
 5. **Analytics Service (`/services/analytics-service`)**: An event-driven service that listens to Redis Pub/Sub events to compile usage data and platform-wide metrics.
 
+```mermaid
+graph TD
+    Client["React Client UI"] -->|"HTTP/REST"| Gateway["API Gateway (:3000)"]
+    
+    subgraph Microservices
+        Gateway -->|"/api/v1/auth"| Auth["Auth Service (:3001)"]
+        Gateway -->|"/api/v1/sql"| SQL["SQL Service (:3002)"]
+        Gateway -->|"/api/v1/challenges"| Challenge["Challenge Service (:3003)"]
+        Gateway -->|"/api/v1/analytics"| Analytics["Analytics Service (:3004)"]
+    end
+    
+    subgraph Infrastructure
+        Auth --> AuthDB[("Auth DB")]
+        SQL --> PracticeDB[("Sandbox DBs")]
+        Challenge --> ChallengeDB[("Challenge DB")]
+        Analytics --> AnalyticsDB[("Analytics DB")]
+        
+        SQL -.->|"Publishes Events"| Redis[("Redis Pub/Sub")]
+        Challenge -.->|"Publishes Events"| Redis
+        Redis -.->|"Subscribes"| Analytics
+    end
+    
+    classDef client fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef gateway fill:#ff9,stroke:#333,stroke-width:2px;
+    classDef service fill:#bbf,stroke:#333,stroke-width:2px;
+    classDef db fill:#bfb,stroke:#333,stroke-width:2px;
+    
+    class Client client;
+    class Gateway gateway;
+    class Auth,SQL,Challenge,Analytics service;
+    class AuthDB,PracticeDB,ChallengeDB,AnalyticsDB,Redis db;
+```
+
 ---
 
 ## 🛠️ Getting Started (Local Development)
