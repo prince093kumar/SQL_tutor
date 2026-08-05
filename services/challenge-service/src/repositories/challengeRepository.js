@@ -208,12 +208,59 @@ class ChallengeRepository {
         const accepted = Number(summary.accepted || 0);
         const totalSolved = Number(summary.solved || 0);
 
+        // Calculate Ranking
+        const userScore = Number(scoreRows[0]?.total_score || 0);
+        let ranking = 0;
+        if (userScore > 0) {
+            const [rankRows] = await db.query(
+                'SELECT COUNT(*) + 1 AS ranking FROM user_scores WHERE total_score > ?',
+                [userScore]
+            );
+            ranking = Number(rankRows[0].ranking);
+        } else {
+            const [totalRows] = await db.query('SELECT COUNT(*) AS total FROM user_scores');
+            ranking = Number(totalRows[0]?.total || 0) + 1;
+        }
+
+        // Calculate Streak
+        const today = new Date();
+        const getStr = (d) => d.toISOString().slice(0, 10);
+        const todayStr = getStr(today);
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        const yesterdayStr = getStr(yesterday);
+
+        const activeDates = new Set(activityRows.map(row => {
+            const d = row.activity_date;
+            if (d instanceof Date) return d.toISOString().slice(0, 10);
+            return String(d).slice(0, 10);
+        }));
+
+        let streak = 0;
+        let checkDate = new Date(today);
+        
+        if (activeDates.has(todayStr)) {
+            // start counting from today
+        } else if (activeDates.has(yesterdayStr)) {
+            // start counting from yesterday
+            checkDate = yesterday;
+        } else {
+            checkDate = null;
+        }
+
+        if (checkDate) {
+            while (activeDates.has(getStr(checkDate))) {
+                streak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+        }
+
         return {
             solved: totalSolved,
-            xp: Number(scoreRows[0]?.total_score || totalSolved * 10 || 1240),
-            accuracy: attempts ? Math.round((accepted / attempts) * 100) : 87,
-            ranking: 21,
-            streak: 18,
+            xp: Number(scoreRows[0]?.total_score || totalSolved * 10 || 0),
+            accuracy: attempts ? Math.round((accepted / attempts) * 100) : 0,
+            ranking: ranking,
+            streak: streak,
             difficulties: difficultyRows.map(row => ({
                 difficulty: row.difficulty,
                 solved: Number(row.solved || 0),
@@ -221,7 +268,7 @@ class ChallengeRepository {
             })),
             skills: topicRows.map(row => ({
                 topic: row.operation,
-                strength: Number(row.attempts || 0) ? Math.round((Number(row.accepted || 0) / Number(row.attempts)) * 100) : this.defaultSkill(row.operation)
+                strength: Number(row.attempts || 0) ? Math.round((Number(row.accepted || 0) / Number(row.attempts)) * 100) : 0
             })),
             recentSubmissions: recentRows.map(row => ({
                 challenge: row.title,
@@ -229,7 +276,7 @@ class ChallengeRepository {
                 runtime: `${row.execution_time_ms || 0}ms`
             })),
             activity: activityRows.map(row => ({
-                date: row.activity_date,
+                date: row.activity_date instanceof Date ? row.activity_date.toISOString().slice(0, 10) : String(row.activity_date).slice(0, 10),
                 solved: Number(row.solved || 0),
                 queries: Number(row.queries || 0)
             }))
