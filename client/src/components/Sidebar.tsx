@@ -5,7 +5,6 @@ import {
   Clock,
   Code,
   Database,
-  FileCode2,
   Folder,
   FunctionSquare,
   RefreshCw,
